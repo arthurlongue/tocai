@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileUpload } from "./components/FileUpload";
 import { Visualizer } from "./components/Visualizer";
+import { Minimap } from "./components/Minimap";
 import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
@@ -9,7 +10,7 @@ import "./App.css";
 
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
-	const { play, pause, stop } = usePlayback();
+	const { play, pause, stop, seek } = usePlayback();
 	const transportStatus = useTransportStatus();
 
 	// Load song into audio engine when it changes
@@ -111,6 +112,14 @@ function App() {
 									Upload Another Song
 								</button>
 							</div>
+						</div>
+
+						{/* Minimap Navigation */}
+						<div className="w-full">
+							<Minimap
+								track={song.tracks[0]}
+								onSeek={(time) => seek(time)}
+							/>
 						</div>
 
 						{/* Visualizer Area */}
