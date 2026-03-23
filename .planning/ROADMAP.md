@@ -10,10 +10,10 @@
   - Implement persistent storage for uploaded files using `localforage`.
 
   **Plans:** 4 plans
-  - [ ] 01-01-PLAN.md — Domain & Flattening (TDD, Repeats)
-  - [ ] 01-02-PLAN.md — Worker Parsing & Transferables
-  - [ ] 01-03-PLAN.md — UI Upload Component
-  - [ ] 01-04-PLAN.md — IndexedDB Storage (localforage)
+  - [x] 01-01-PLAN.md — Domain & Flattening (TDD, Repeats)
+  - [x] 01-02-PLAN.md — Worker Parsing & Transferables
+  - [x] 01-03-PLAN.md — UI Upload Component
+  - [x] 01-04-PLAN.md — IndexedDB Storage (localforage)
 
 - **Phase 2: Basic Audio Engine**
   - Initialize the `Tone.js` audio context after user interaction.
@@ -22,13 +22,18 @@
   - **Requirements**: [AUDIO-01, AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05]
 
   **Plans:** 2 plans
-  - [ ] 02-01-PLAN.md — Core Synthesis (6 strings)
-  - [ ] 02-02-PLAN.md — Scheduling & Transport Hooks
+  - [x] 02-01-PLAN.md — Core Synthesis (6 strings)
+  - [x] 02-02-PLAN.md — Scheduling & Transport Hooks
 
 - **Phase 3: Core Visualizer (Canvas)**
   - Implement a 60fps canvas renderer with a horizontal scrolling timeline.
   - Synchronize rendering with `Tone.Transport.seconds`.
   - Implement dynamic lane rendering and note circles (fret numbers).
+  - **Requirements**: [VISUAL-01, VISUAL-02, VISUAL-03, VISUAL-04, VISUAL-05]
+
+  **Plans:** 2 plans
+  - [ ] 03-01-PLAN.md — Rendering Logic & Core Engine
+  - [ ] 03-02-PLAN.md — Visualizer Component & Integration
 
 - **Phase 4: Integration & Polish**
   - Connect the parsing, audio, and visualizer modules into a unified flow.
