@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlaybackNote } from "../domain/types";
 import { calculateVisibleNotes, getNoteX, getNoteY } from "./layout";
+import { HIT_LINE_X, PIXELS_PER_SECOND } from "./constants";
 
 describe("Layout Math", () => {
 	describe("getNoteX", () => {
@@ -66,6 +67,31 @@ describe("Layout Math", () => {
 			const visible = calculateVisibleNotes(notes, currentTime, viewportWidth);
 			expect(visible).toHaveLength(1);
 			expect(visible[0].startTime).toBe(2.0);
+		});
+	});
+
+	describe("HIT_LINE_X constant", () => {
+		it("HIT_LINE_X constant positions playhead correctly", () => {
+			// HIT_LINE_X should be a positive value representing pixels from left edge
+			expect(HIT_LINE_X).toBeGreaterThan(0);
+			expect(HIT_LINE_X).toBe(100);
+
+			// Verify it's used correctly in getNoteX: when startTime === currentTime,
+			// the note should be positioned exactly at HIT_LINE_X
+			const noteAtCurrentTime = getNoteX(5.0, 5.0);
+			expect(noteAtCurrentTime).toBe(HIT_LINE_X);
+		});
+
+		it("PIXELS_PER_SECOND scales time to distance correctly", () => {
+			expect(PIXELS_PER_SECOND).toBe(200);
+
+			// A note 1 second in the future should be PIXELS_PER_SECOND pixels to the right
+			const oneSecondFuture = getNoteX(6.0, 5.0);
+			expect(oneSecondFuture).toBe(HIT_LINE_X + PIXELS_PER_SECOND);
+
+			// A note 1 second in the past should be PIXELS_PER_SECOND pixels to the left
+			const oneSecondPast = getNoteX(4.0, 5.0);
+			expect(oneSecondPast).toBe(HIT_LINE_X - PIXELS_PER_SECOND);
 		});
 	});
 });
