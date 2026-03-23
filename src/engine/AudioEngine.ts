@@ -13,6 +13,7 @@ export class AudioEngine {
 	private currentPart: Tone.Part<{ time: number; note: PlaybackNote }> | null =
 		null;
 	private onNoteListeners: ((event: AudioEngineEvent) => void)[] = [];
+	private baseBpm: number = 120;
 
 	private constructor() {
 		this.stringSynth = new StringSynth();
@@ -91,6 +92,24 @@ export class AudioEngine {
 	public stopAll(): void {
 		this.stringSynth.releaseAll();
 		Tone.getTransport().stop();
+	}
+
+	/**
+	 * Set playback speed (tempo multiplier)
+	 * Changes Tone.Transport.bpm to preserve pitch for synthesized notes
+	 * @param multiplier - Speed multiplier (0.25 to 2.0)
+	 */
+	public setSpeed(multiplier: number): void {
+		const newBpm = this.baseBpm * multiplier;
+		Tone.getTransport().bpm.value = newBpm;
+	}
+
+	/**
+	 * Set the base BPM for speed calculations
+	 * @param bpm - Base BPM value
+	 */
+	public setBaseBpm(bpm: number): void {
+		this.baseBpm = bpm;
 	}
 
 	/**
