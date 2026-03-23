@@ -7,13 +7,14 @@
 **Phase 4**: Integration & Polish
 
 ## Progress Tracking
-- [ ] Milestone 1: Core MVP (80%)
+- [ ] Milestone 1: Core MVP (85%)
   - [x] Phase 1: Domain & Parsing Foundation (100%)
   - [x] Phase 2: Basic Audio Engine (100%)
   - [x] Phase 3: Core Visualizer (Canvas) (100%)
-  - [ ] Phase 4: Integration & Polish (50%)
-    - [x] Plan 01: Transport Bar (pending verification)
+  - [ ] Phase 4: Integration & Polish (60%)
+    - [x] Plan 01: Transport Bar (100%)
     - [x] Plan 02: Minimap & Visual Polish (100%)
+    - [ ] Plan 03: Responsive Design & E2E Testing (pending)
 
 ## Key Decisions
 - **Architecture**: Separated into `domain/` (data logic), `engine/` (audio/visual logic), and `components/` (UI logic).
@@ -24,10 +25,11 @@
 - **Color Standards**: Adoption of Rocksmith string colors for note visualization.
 - **Dark Theme**: Charcoal backgrounds (#1a1a1a, #252525) with near-black canvas (#0a0a0a) and Rocksmith accent colors.
 - **Minimap**: 48px height canvas with click-to-seek interaction for timeline navigation.
+- **Speed Control**: Use `Tone.Transport.bpm` for tempo changes (preserves pitch for synthesized notes).
+- **Transport Bar**: Full-featured controls below visualizer (PLAY/PAUSE/STOP, seek, speed 0.25x-2.0x, volume).
 
 ## Next Steps
 - Complete Plan 03: Responsive Design & E2E Testing
-- Verify Plan 01: Transport Bar functionality
 - Final E2E testing of the Core MVP
 
 ## Session Log
@@ -37,3 +39,10 @@
   - Added dark theme CSS custom properties
   - Integrated Minimap into App.tsx
   - All 12 tests passing
+
+- **2026-03-23**: Completed Plan 04-01: Transport Bar & Speed Control
+  - Created TransportBar component with full playback controls
+  - Implemented useSpeedControl hook for tempo management
+  - Extended AudioEngine with setSpeed() method (BPM-based)
+  - Integrated TransportBar below Visualizer in App.tsx
+  - All 10 new tests passing
