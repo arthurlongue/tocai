@@ -1,5 +1,5 @@
 import type { PlaybackNote } from "../domain/types";
-import { HIT_LINE_X, LANE_HEIGHT, PIXELS_PER_SECOND } from "./constants";
+import { HIT_LINE_X, PIXELS_PER_SECOND } from "./constants";
 
 /**
  * Calculates X coordinate relative to hit-line
@@ -13,9 +13,9 @@ export function getNoteX(startTime: number, currentTime: number): number {
  * 0 is highest string index (lowest pitch), 5 is lowest string index (highest pitch)
  * We want string 0 (E low) at the bottom and string 5 (E high) at the top.
  */
-export function getNoteY(stringIndex: number): number {
+export function getNoteY(stringIndex: number, laneHeight: number): number {
 	// stringIndex 0 -> top, 5 -> bottom
-	return stringIndex * LANE_HEIGHT + LANE_HEIGHT / 2;
+	return stringIndex * laneHeight + laneHeight / 2;
 }
 
 /**

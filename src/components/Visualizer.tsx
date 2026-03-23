@@ -73,7 +73,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 	}, [track]);
 
 	return (
-		<div className="relative w-full h-[400px] bg-slate-900 border-y border-slate-700 overflow-hidden">
+		<div className="relative w-full h-[500px] bg-slate-900 border-y border-slate-700 overflow-hidden">
 			<canvas ref={canvasRef} className="w-full h-full block" />
 		</div>
 	);

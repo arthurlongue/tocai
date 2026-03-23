@@ -42,12 +42,18 @@ export class Renderer {
 
 	render(): void {
 		const context = Tone.getContext();
+		// Compensate for hardware output latency AND audio scheduling lookAhead
+		// context.lookAhead is the amount of time in the future that Tone schedules events
 		const latency = (context.rawContext as AudioContext).outputLatency || 0;
-		const currentTime = Math.max(0, Tone.getTransport().seconds - latency);
+		const lookAhead = context.lookAhead || 0;
+		const delay = latency + lookAhead;
+		
+		const currentTime = Math.max(0, Tone.getTransport().seconds - delay);
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
 		const height = this.canvas.height / dpr;
+		const laneHeight = height / STRING_COUNT;
 
 		// Clear
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -56,7 +62,7 @@ export class Renderer {
 		this.ctx.strokeStyle = "#333";
 		this.ctx.lineWidth = 1;
 		for (let i = 0; i < STRING_COUNT; i++) {
-			const y = Math.floor(getNoteY(i));
+			const y = Math.floor(getNoteY(i, laneHeight));
 			this.ctx.beginPath();
 			this.ctx.moveTo(0, y);
 			this.ctx.lineTo(width, y);
@@ -81,7 +87,7 @@ export class Renderer {
 			);
 
 			for (const note of visibleNotes) {
-				this.drawNote(note, currentTime);
+				this.drawNote(note, currentTime, laneHeight);
 			}
 		}
 
@@ -91,9 +97,9 @@ export class Renderer {
 		}
 	}
 
-	private drawNote(note: PlaybackNote, currentTime: number): void {
+	private drawNote(note: PlaybackNote, currentTime: number, laneHeight: number): void {
 		const x = getNoteX(note.startTime, currentTime);
-		const y = getNoteY(note.string);
+		const y = getNoteY(note.string, laneHeight);
 		const color = STRING_COLORS[note.string] || "#fff";
 
 		// Circle

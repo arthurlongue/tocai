@@ -24,9 +24,9 @@ describe("Layout Math", () => {
 		it("calculates the correct Y position for each string", () => {
 			// STRING_COUNT = 6, LANE_HEIGHT = 40
 			// 0: 0*40 + 20 = 20
-			expect(getNoteY(0)).toBe(20);
+			expect(getNoteY(0, 40)).toBe(20);
 			// 5: 5*40 + 20 = 220
-			expect(getNoteY(5)).toBe(220);
+			expect(getNoteY(5, 40)).toBe(220);
 		});
 	});
 
