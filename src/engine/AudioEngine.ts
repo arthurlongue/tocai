@@ -10,7 +10,7 @@ export type AudioEngineEvent = {
 export class AudioEngine {
   private static instance: AudioEngine;
   private stringSynth: StringSynth;
-  private currentPart: Tone.Part<PlaybackNote> | null = null;
+  private currentPart: Tone.Part<{ time: number; note: PlaybackNote }> | null = null;
   private onNoteListeners: ((event: AudioEngineEvent) => void)[] = [];
 
   private constructor() {
