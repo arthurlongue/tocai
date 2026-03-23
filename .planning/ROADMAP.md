@@ -16,9 +16,10 @@
   - [ ] 01-04-PLAN.md — IndexedDB Storage (localforage)
 
 - **Phase 2: Basic Audio Engine**
-  - Initialize the `Tone.js` audio context.
+  - Initialize the `Tone.js` audio context after user interaction.
   - Create a 6-string synthesizer (One Synth per String) for track playback.
-  - Connect basic Play/Pause/Stop/Seek transport controls to the synthesis engine.
+  - Connect Play/Pause/Stop/Seek transport controls to the synthesis engine.
+  - **Requirements**: [AUDIO-01, AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05]
 
   **Plans:** 2 plans
   - [ ] 02-01-PLAN.md — Core Synthesis (6 strings)
