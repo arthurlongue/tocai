@@ -2,16 +2,17 @@ import { useEffect, useState } from "react";
 import { FileUpload } from "./components/FileUpload";
 import { Visualizer } from "./components/Visualizer";
 import { Minimap } from "./components/Minimap";
+import { TransportBar } from "./components/TransportBar";
 import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
-import { useTransportStatus } from "./hooks/useTransportStatus";
+import { useSpeedControl } from "./hooks/useSpeedControl";
 import "./App.css";
 
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
-	const { play, pause, stop, seek } = usePlayback();
-	const transportStatus = useTransportStatus();
+	const { stop, seek } = usePlayback();
+	const { resetSpeed } = useSpeedControl();
 
 	// Load song into audio engine when it changes
 	useEffect(() => {
@@ -66,52 +67,17 @@ function App() {
 								</div>
 							</div>
 
-							{/* Playback Controls */}
-							<div className="flex flex-col gap-4">
-								<div className="flex items-center justify-center gap-4">
-									{transportStatus === "started" ? (
-										<button
-											type="button"
-											onClick={pause}
-											className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors font-bold"
-										>
-											PAUSE
-										</button>
-									) : (
-										<button
-											type="button"
-											onClick={play}
-											className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-bold"
-										>
-											PLAY
-										</button>
-									)}
-									<button
-										type="button"
-										onClick={stop}
-										className="py-2 px-4 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors font-bold"
-									>
-										STOP
-									</button>
-								</div>
-
-								<div className="text-center">
-									<span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-										Status: {transportStatus}
-									</span>
-								</div>
-
-								<button
-									type="button"
-									onClick={() => {
-										stop();
-										setSong(null);
-									}}
-									className="mt-2 w-full py-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline"
-								>
-									Upload Another Song
-								</button>
-							</div>
+							<button
+								type="button"
+								onClick={() => {
+									stop();
+									resetSpeed();
+									setSong(null);
+								}}
+								className="w-full py-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline"
+							>
+								Upload Another Song
+							</button>
 						</div>
 
 						{/* Minimap Navigation */}
@@ -126,6 +92,16 @@ function App() {
 						<div className="w-full">
 							<Visualizer track={song.tracks[0]} />
 						</div>
+
+						{/* Transport Bar */}
+						<TransportBar
+							songDuration={song.durationSeconds}
+							currentTrack={song.tracks[0]}
+							onTrackChange={(index) => {
+								// Handle track change (future implementation)
+								console.log("Track change requested:", index);
+							}}
+						/>
 					</div>
 				)}
 			</section>
