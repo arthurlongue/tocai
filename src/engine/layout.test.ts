@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PlaybackNote } from "../domain/types";
-import { calculateVisibleNotes, getNoteX, getNoteY } from "./layout";
 import { HIT_LINE_X, PIXELS_PER_SECOND } from "./constants";
+import { calculateVisibleNotes, getNoteX, getNoteY } from "./layout";
 
 describe("Layout Math", () => {
 	describe("getNoteX", () => {

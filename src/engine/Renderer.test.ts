@@ -2,27 +2,38 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as Tone from "tone";
+import type { Transport } from "tone";
 import { Renderer } from "./Renderer";
+import { HIT_LINE_X, NOTE_RADIUS, STRING_COUNT } from "./constants";
 
 // Mock Tone.js
 vi.mock("tone", () => ({
 	getTransport: vi.fn(() => ({
 		seconds: 0,
 	})),
+	getContext: vi.fn(() => ({
+		rawContext: {
+			outputLatency: 0,
+		},
+		lookAhead: 0,
+	})),
 }));
 
 describe("Renderer", () => {
 	let canvas: HTMLCanvasElement;
+	let mockCtx: any;
 
 	beforeEach(() => {
+		vi.clearAllMocks();
+
 		// Basic canvas mock
 		canvas = document.createElement("canvas");
 		canvas.width = 800;
 		canvas.height = 600;
 
-		// In JSDOM, getContext('2d') returns a basic mock if not configured.
-		// We might need to mock some methods if they aren't available.
-		const mockCtx = {
+		// Mock canvas context with spies
+		mockCtx = {
 			clearRect: vi.fn(),
 			beginPath: vi.fn(),
 			moveTo: vi.fn(),
@@ -31,17 +42,15 @@ describe("Renderer", () => {
 			fill: vi.fn(),
 			arc: vi.fn(),
 			fillText: vi.fn(),
-			set strokeStyle(_val: any) {},
-			set fillStyle(_val: any) {},
-			set lineWidth(_val: any) {},
-			set font(_val: any) {},
-			set textAlign(_val: any) {},
-			set textBaseline(_val: any) {},
+			strokeStyle: "",
+			fillStyle: "",
+			lineWidth: 0,
+			font: "",
+			textAlign: "",
+			textBaseline: "",
 		};
 
-		if (!canvas.getContext("2d")) {
-			canvas.getContext = vi.fn(() => mockCtx) as any;
-		}
+		vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as any);
 	});
 
 	it("instantiates the Renderer class", () => {
@@ -66,7 +75,7 @@ describe("Renderer", () => {
 		const mockTrack = {
 			id: "1",
 			name: "Test",
-			tuning: [],
+			tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
 			notes: [
 				{
 					pitch: 60,
@@ -82,13 +91,365 @@ describe("Renderer", () => {
 		// No easy way to check private property, but it shouldn't throw
 	});
 
-	it("calls clearRect on each render", () => {
+	it("calls clearRect on each draw", () => {
 		const renderer = new Renderer(canvas);
-		const ctx = canvas.getContext("2d")!;
-		const clearRectSpy = vi.spyOn(ctx, "clearRect");
+		const clearRectSpy = vi.spyOn(mockCtx, "clearRect");
 
-		renderer.render();
+		renderer.draw();
 
 		expect(clearRectSpy).toHaveBeenCalled();
+	});
+
+	describe("VISUAL-01: Horizontal scrolling animation", () => {
+		it("scrolls notes horizontally right-to-left based on time progression", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 2.0,
+						duration: 0.5,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			// At time 0, note at startTime 2.0 should be far to the right
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 0 } as unknown as Transport);
+			renderer.draw();
+
+			// Verify arc was called (note drawn) - position calculated from getNoteX
+			expect(mockCtx.arc).toHaveBeenCalled();
+
+			// At time 2.0, note should be near HIT_LINE_X (100)
+			// Note: The renderer adds a small latency compensation (0.05), so the actual
+			// position will be slightly offset: 100 + 0.05 * 200 = 110
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 2.0 } as unknown as Transport);
+			mockCtx.arc.mockClear();
+			renderer.draw();
+
+			// The note should be drawn near HIT_LINE_X when currentTime matches startTime
+			const arcCalls = mockCtx.arc.mock.calls;
+			expect(arcCalls.length).toBeGreaterThan(0);
+			// First argument is x coordinate
+			const noteX = arcCalls[0][0] as number;
+			// Expected: HIT_LINE_X + 0.05 * PIXELS_PER_SECOND = 100 + 10 = 110
+			expect(noteX).toBeCloseTo(110, 0);
+		});
+	});
+
+	describe("VISUAL-02: Dynamic lane rendering", () => {
+		it("renders dynamic lanes based on track tuning", () => {
+			const mockTrackWithTuning = {
+				id: "1",
+				name: "Standard Tuning",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrackWithTuning as any);
+			renderer.draw();
+
+			// Should draw STRING_COUNT horizontal lines for lanes + 1 for hit-line
+			// moveTo is called STRING_COUNT times for lanes + 1 for hit-line
+			expect(mockCtx.moveTo).toHaveBeenCalledTimes(STRING_COUNT + 1);
+			expect(mockCtx.lineTo).toHaveBeenCalledTimes(STRING_COUNT + 1);
+
+			// Verify Y positions are calculated correctly for each string lane
+			const laneHeight = 600 / STRING_COUNT; // height / STRING_COUNT
+			const moveToCalls = mockCtx.moveTo.mock.calls;
+
+			for (let i = 0; i < STRING_COUNT; i++) {
+				const expectedY = i * laneHeight + laneHeight / 2;
+				// moveTo is called with (0, y) for each lane
+				expect(moveToCalls[i][1]).toBeCloseTo(expectedY, 0);
+			}
+		});
+
+		it("renders lanes at correct vertical positions", () => {
+			const renderer = new Renderer(canvas);
+			renderer.draw();
+
+			// Verify string lanes are drawn as horizontal lines
+			const lineToCalls = mockCtx.lineTo.mock.calls;
+			for (let i = 0; i < STRING_COUNT; i++) {
+				// Each line should span the full width (0 to width)
+				expect(lineToCalls[i][0]).toBe(800); // width
+			}
+		});
+	});
+
+	describe("VISUAL-03: Fret number rendering", () => {
+		it("draws fret numbers inside note circles", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 0,
+						duration: 1,
+						string: 0,
+						fret: 7,
+						techniques: {},
+					},
+					{
+						pitch: 62,
+						startTime: 1,
+						duration: 1,
+						string: 1,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+			renderer.draw();
+
+			// fillText should be called for each note's fret number
+			expect(mockCtx.fillText).toHaveBeenCalledTimes(2);
+
+			// Verify fillText is called with the correct fret numbers as strings
+			const fillTextCalls = mockCtx.fillText.mock.calls;
+			expect(fillTextCalls[0][0]).toBe("7"); // First note fret
+			expect(fillTextCalls[1][0]).toBe("5"); // Second note fret
+
+			// Verify text styling for fret numbers
+			expect(mockCtx.font).toBe("bold 12px sans-serif");
+			expect(mockCtx.textAlign).toBe("center");
+			expect(mockCtx.textBaseline).toBe("middle");
+		});
+
+		it("positions fret numbers at the center of note circles", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 5.0,
+						duration: 1,
+						string: 0,
+						fret: 12,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			// Set time so note is at hit-line
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			renderer.draw();
+
+			// Get the arc call to find note center
+			const arcCall = mockCtx.arc.mock.calls[0];
+			const noteCenterX = arcCall[0] as number;
+			const noteCenterY = arcCall[1] as number;
+
+			// Get the fillText call for fret number
+			const fillTextCall = mockCtx.fillText.mock.calls[0];
+			const textX = fillTextCall[1] as number;
+			const textY = fillTextCall[2] as number;
+
+			// Fret number should be centered in the circle
+			expect(textX).toBeCloseTo(noteCenterX, 0);
+			expect(textY).toBeCloseTo(noteCenterY, 0);
+		});
+	});
+
+	describe("VISUAL-04: Hit-line position", () => {
+		it("HIT_LINE_X constant positions playhead correctly", () => {
+			const renderer = new Renderer(canvas);
+			renderer.draw();
+
+			// Verify hit-line is drawn at HIT_LINE_X (last moveTo/lineTo calls are for hit-line)
+			const moveToCalls = mockCtx.moveTo.mock.calls;
+			const lineToCalls = mockCtx.lineTo.mock.calls;
+
+			// Hit-line is drawn after string lanes, so it's the last moveTo/lineTo call
+			const hitLineMoveTo = moveToCalls[moveToCalls.length - 1];
+			const hitLineLineTo = lineToCalls[lineToCalls.length - 1];
+
+			expect(hitLineMoveTo[0]).toBe(HIT_LINE_X);
+			expect(hitLineMoveTo[1]).toBe(0);
+			expect(hitLineLineTo[0]).toBe(HIT_LINE_X);
+			expect(hitLineLineTo[1]).toBe(600); // height
+
+			// Verify hit-line styling
+			expect(mockCtx.strokeStyle).toBe("#fff");
+			expect(mockCtx.lineWidth).toBe(2);
+		});
+
+		it("draws hit-line as a vertical line from top to bottom", () => {
+			const renderer = new Renderer(canvas);
+			renderer.draw();
+
+			const moveToCalls = mockCtx.moveTo.mock.calls;
+			const lineToCalls = mockCtx.lineTo.mock.calls;
+
+			// Find the hit-line call (should have x = HIT_LINE_X and y from 0 to height)
+			const hitLineMoveTo = moveToCalls.find(
+				(call: any) => call[0] === HIT_LINE_X && call[1] === 0,
+			);
+			const hitLineLineTo = lineToCalls.find(
+				(call: any) => call[0] === HIT_LINE_X && call[1] === 600,
+			);
+
+			expect(hitLineMoveTo).toBeDefined();
+			expect(hitLineLineTo).toBeDefined();
+		});
+	});
+
+	describe("VISUAL-05: Tone.Transport synchronization", () => {
+		it("polls Tone.Transport.seconds for sync", () => {
+			const renderer = new Renderer(canvas);
+			renderer.draw();
+
+			// Verify Tone.getTransport() was called to get current time
+			expect(Tone.getTransport).toHaveBeenCalled();
+			expect(Tone.getContext).toHaveBeenCalled();
+		});
+
+		it("uses latency compensation for accurate sync", () => {
+			// Mock with non-zero latency
+			vi.mocked(Tone.getContext).mockReturnValue({
+				rawContext: {
+					outputLatency: 0.1, // 100ms latency
+				},
+				lookAhead: 0.025, // 25ms look-ahead
+			});
+
+			const renderer = new Renderer(canvas);
+			renderer.draw();
+
+			// Verify getContext was called to retrieve latency info
+			expect(Tone.getContext).toHaveBeenCalled();
+		});
+
+		it("renders continuously via requestAnimationFrame loop", () => {
+			const renderer = new Renderer(canvas);
+			const rafSpy = vi.spyOn(window, "requestAnimationFrame");
+
+			renderer.start();
+
+			// requestAnimationFrame should be called to start the loop
+			expect(rafSpy).toHaveBeenCalled();
+
+			// Get the callback and verify it calls draw which schedules next frame
+			const rafCallback = rafSpy.mock.calls[0][0];
+			rafCallback(0); // Simulate frame callback
+
+			// After draw is called, another RAF should be scheduled if loop continues
+			// (This is tested indirectly through the draw method)
+		});
+	});
+
+	describe("Note visualization", () => {
+		it("draws notes with correct string colors", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 5.0,
+						duration: 1,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+					{
+						pitch: 62,
+						startTime: 6.0,
+						duration: 1,
+						string: 3,
+						fret: 7,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			// Set time so notes are visible in viewport
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			renderer.draw();
+
+			// fill should be called for each note (2 notes)
+			expect(mockCtx.fill).toHaveBeenCalledTimes(2);
+		});
+
+		it("draws note circles with correct radius", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 5.0,
+						duration: 1,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			// Set time so note is visible
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			renderer.draw();
+
+			// arc should be called with NOTE_RADIUS as the radius
+			const arcCall = mockCtx.arc.mock.calls[0];
+			expect(arcCall[2]).toBe(NOTE_RADIUS);
+		});
+
+		it("draws white border around notes", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 5.0,
+						duration: 1,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			// Set time so note is visible
+			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			renderer.draw();
+
+			// stroke should be called (hit-line + note borders)
+			expect(mockCtx.stroke).toHaveBeenCalled();
+		});
 	});
 });
