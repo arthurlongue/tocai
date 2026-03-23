@@ -39,6 +39,12 @@
   - Connect the parsing, audio, and visualizer modules into a unified flow.
   - Refine the aesthetic (minimalist dark theme with vibrant canvas colors).
   - Verify performance and responsiveness.
+  - **Requirements**: [INTEGRATION-01, INTEGRATION-02, INTEGRATION-03, INTEGRATION-04, PERF-01, PERF-02]
+
+  **Plans:** 3 plans
+  - [ ] 04-01-PLAN.md — Transport Bar & Speed Control
+  - [ ] 04-02-PLAN.md — Minimap & Visual Polish
+  - [ ] 04-03-PLAN.md — E2E Testing & Integration
 
 ## Milestone 2: Enhanced Features & Library
 - **Library Management**: Store and load songs using IndexedDB (`localforage`).
