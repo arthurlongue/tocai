@@ -4,23 +4,25 @@
 **Milestone 1**: Core MVP
 
 ## Active Phase
-**Phase 3**: Core Visualizer (Canvas)
+**Phase 4**: Integration & Polish
 
 ## Progress Tracking
-- [ ] Milestone 1: Core MVP (50%)
+- [ ] Milestone 1: Core MVP (75%)
   - [x] Phase 1: Domain & Parsing Foundation (100%)
   - [x] Phase 2: Basic Audio Engine (100%)
-  - [ ] Phase 3: Core Visualizer (Canvas) (0%)
+  - [x] Phase 3: Core Visualizer (Canvas) (100%)
   - [ ] Phase 4: Integration & Polish (0%)
 
 ## Key Decisions
-- **Architecture**: Separated into `domain/` (data logic), `engine/` (audio logic), and `components/` (UI logic).
+- **Architecture**: Separated into `domain/` (data logic), `engine/` (audio/visual logic), and `components/` (UI logic).
 - **Tech Stack**: React 19 + Tone.js + `guitarpro-parser` + Canvas.
 - **Audio Strategy**: "One Synth per String" (6 instances) for string-independent guitar techniques.
-- **Scheduling**: Used `Tone.Part` for note scheduling and `Tone.Draw` for visual sync.
-- **UI Sync**: Audio engine emits `note-on` events via `Tone.Draw` to ensure visual alignment with audio.
-- **Rendering**: Dedicated `Renderer` class using `requestAnimationFrame` polling `Tone.Transport.seconds`.
+- **Visual Strategy**: High-performance Canvas renderer using `requestAnimationFrame` polling `Tone.Transport.seconds`.
+- **HiDPI**: Mandatory canvas scaling based on `devicePixelRatio` for sharpness.
+- **Color Standards**: Adoption of Rocksmith string colors for note visualization.
 
 ## Next Steps
-- Implement high-performance Canvas renderer (`03-01-PLAN.md`).
-- Synchronize horizontal scrolling with `Tone.Transport` (`03-02-PLAN.md`).
+- Implement Minimap/Overview for navigation.
+- Add playback speed controls (0.25x - 2.0x).
+- Refine UI aesthetics and responsiveness.
+- Final E2E testing of the Core MVP.
