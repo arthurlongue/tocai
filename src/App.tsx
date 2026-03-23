@@ -45,8 +45,8 @@ function App() {
 						onError={(err) => alert(`Failed to load song: ${err.message}`)}
 					/>
 				) : (
-					<div className="w-full flex flex-col items-center gap-8 animate-in fade-in duration-500">
-						<div className="w-full max-w-md p-6 bg-card rounded-xl border shadow-lg">
+					<div className="w-full flex flex-col items-stretch gap-8 animate-in fade-in duration-500">
+						<div className="w-full max-w-md mx-auto p-6 bg-card rounded-xl border shadow-lg">
 							<h2 className="text-2xl font-bold mb-1">{song.metadata.title}</h2>
 							<p className="text-lg text-muted-foreground mb-4">
 								{song.metadata.artist}
