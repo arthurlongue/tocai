@@ -11,31 +11,32 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<Renderer | null>(null);
 
-	// Resize logic for HiDPI/Retina
-	const resizeCanvas = () => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-
-		const dpr = window.devicePixelRatio || 1;
-		const rect = canvas.getBoundingClientRect();
-		const width = rect.width;
-		const height = rect.height;
-
-		// Set physical dimensions
-		canvas.width = width * dpr;
-		canvas.height = height * dpr;
-
-		// Set logical dimensions via CSS if not already set by parent
-		// (Usually handled by CSS width: 100%, height: 100%)
-
-		const ctx = canvas.getContext("2d");
-		if (ctx) {
-			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		}
-	};
-
 	// Initialize Renderer
 	useEffect(() => {
+		// Resize logic for HiDPI/Retina
+		const resizeCanvas = () => {
+			const canvas = canvasRef.current;
+			if (!canvas) return;
+			const parent = canvas.parentElement;
+			if (!parent) return;
+
+			const dpr = window.devicePixelRatio || 1;
+			const rect = parent.getBoundingClientRect();
+			const width = rect.width;
+			const height = rect.height;
+
+			// Set physical dimensions
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+
+			// Set logical dimensions via CSS if not already set by parent
+			// (Usually handled by CSS width: 100%, height: 100%)
+
+			const ctx = canvas.getContext("2d");
+			if (ctx) {
+				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			}
+		};
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
@@ -61,9 +62,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 			renderer.stop();
 			window.removeEventListener("resize", handleResize);
 		};
-	}, [
-		track,
-	]);
+	}, [track]);
 
 	// Update track when it changes
 	useEffect(() => {
@@ -73,7 +72,10 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 	}, [track]);
 
 	return (
-		<div className="relative w-full h-[500px] bg-slate-900 border-y border-slate-700 overflow-hidden">
+		<div
+			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden"
+			style={{ height: "500px" }}
+		>
 			<canvas ref={canvasRef} className="w-full h-full block" />
 		</div>
 	);

@@ -42,12 +42,15 @@ export class Renderer {
 
 	render(): void {
 		const context = Tone.getContext();
-		// Compensate for hardware output latency AND audio scheduling lookAhead
-		// context.lookAhead is the amount of time in the future that Tone schedules events
 		const latency = (context.rawContext as AudioContext).outputLatency || 0;
+		// Tone.js schedules events lookAhead seconds in the future
 		const lookAhead = context.lookAhead || 0;
-		const delay = latency + lookAhead;
-		
+		// By subtracting this delay, we push the notes to the right,
+		// causing them to hit the hit-line slightly later, perfectly
+		// matching when the sound comes out of the speakers.
+		// Added a small baseline constant (0.05) to tune it perfectly.
+		const delay = latency + lookAhead + 0.05;
+
 		const currentTime = Math.max(0, Tone.getTransport().seconds - delay);
 
 		const dpr = window.devicePixelRatio || 1;
@@ -97,7 +100,11 @@ export class Renderer {
 		}
 	}
 
-	private drawNote(note: PlaybackNote, currentTime: number, laneHeight: number): void {
+	private drawNote(
+		note: PlaybackNote,
+		currentTime: number,
+		laneHeight: number,
+	): void {
 		const x = getNoteX(note.startTime, currentTime);
 		const y = getNoteY(note.string, laneHeight);
 		const color = STRING_COLORS[note.string] || "#fff";

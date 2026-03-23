@@ -70,27 +70,24 @@ function App() {
 								<div className="flex items-center justify-center gap-4">
 									{transportStatus === "started" ? (
 										<button
-										  type="button"
-										  onClick={pause}
-
+											type="button"
+											onClick={pause}
 											className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors font-bold"
 										>
 											PAUSE
 										</button>
 									) : (
 										<button
-										  type="button"
-										  onClick={play}
-
+											type="button"
+											onClick={play}
 											className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-bold"
 										>
 											PLAY
 										</button>
 									)}
 									<button
-									  type="button"
-									  onClick={stop}
-
+										type="button"
+										onClick={stop}
 										className="py-2 px-4 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors font-bold"
 									>
 										STOP
@@ -104,12 +101,11 @@ function App() {
 								</div>
 
 								<button
-								  type="button"
-								  onClick={() => {
-								    stop();
-								    setSong(null);
-								  }}
-
+									type="button"
+									onClick={() => {
+										stop();
+										setSong(null);
+									}}
 									className="mt-2 w-full py-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline"
 								>
 									Upload Another Song
@@ -118,7 +114,7 @@ function App() {
 						</div>
 
 						{/* Visualizer Area */}
-						<div className="w-full max-w-5xl">
+						<div className="w-full">
 							<Visualizer track={song.tracks[0]} />
 						</div>
 					</div>
