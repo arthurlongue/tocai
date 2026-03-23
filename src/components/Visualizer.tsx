@@ -13,32 +13,27 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 
 	// Initialize Renderer
 	useEffect(() => {
-		// Resize logic for HiDPI/Retina
-		const resizeCanvas = () => {
-			const canvas = canvasRef.current;
-			if (!canvas) return;
-			const parent = canvas.parentElement;
-			if (!parent) return;
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const parent = canvas.parentElement;
+		if (!parent) return;
 
+		const resizeCanvas = () => {
 			const dpr = window.devicePixelRatio || 1;
 			const rect = parent.getBoundingClientRect();
-			const width = rect.width;
-			const height = rect.height;
+			
+			// Only resize if dimensions are valid
+			if (rect.width === 0 || rect.height === 0) return;
 
 			// Set physical dimensions
-			canvas.width = width * dpr;
-			canvas.height = height * dpr;
-
-			// Set logical dimensions via CSS if not already set by parent
-			// (Usually handled by CSS width: 100%, height: 100%)
+			canvas.width = rect.width * dpr;
+			canvas.height = rect.height * dpr;
 
 			const ctx = canvas.getContext("2d");
 			if (ctx) {
 				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 			}
 		};
-		const canvas = canvasRef.current;
-		if (!canvas) return;
 
 		// Initial resize
 		resizeCanvas();
@@ -52,15 +47,19 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 
 		renderer.start();
 
-		const handleResize = () => {
+		// Use ResizeObserver to reliably catch container size changes
+		const observer = new ResizeObserver(() => {
 			resizeCanvas();
-		};
+		});
+		observer.observe(parent);
 
-		window.addEventListener("resize", handleResize);
+		// Also listen to window resize as fallback
+		window.addEventListener("resize", resizeCanvas);
 
 		return () => {
 			renderer.stop();
-			window.removeEventListener("resize", handleResize);
+			observer.disconnect();
+			window.removeEventListener("resize", resizeCanvas);
 		};
 	}, [track]);
 
