@@ -17,8 +17,12 @@
 
 - **Phase 2: Basic Audio Engine**
   - Initialize the `Tone.js` audio context.
-  - Create a PolySynth-based synthesizer for track playback.
+  - Create a 6-string synthesizer (One Synth per String) for track playback.
   - Connect basic Play/Pause/Stop/Seek transport controls to the synthesis engine.
+
+  **Plans:** 2 plans
+  - [ ] 02-01-PLAN.md — Core Synthesis (6 strings)
+  - [ ] 02-02-PLAN.md — Scheduling & Transport Hooks
 
 - **Phase 3: Core Visualizer (Canvas)**
   - Implement a 60fps canvas renderer with a horizontal scrolling timeline.
