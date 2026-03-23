@@ -1,4 +1,22 @@
 :root {
+	/* Dark theme tokens */
+	--color-background: #1a1a1a;
+	--color-surface: #252525;
+	--color-surface-elevated: #2a2a2a;
+	--color-border: #3a3a3a;
+	--color-text-primary: #f3f4f6;
+	--color-text-secondary: #9ca3af;
+	--color-canvas: #0a0a0a;
+
+	/* Rocksmith accent colors */
+	--accent-red: #FF0000;
+	--accent-yellow: #FFFF00;
+	--accent-blue: #0000FF;
+	--accent-orange: #FFA500;
+	--accent-green: #00FF00;
+	--accent-purple: #A020F0;
+
+	/* Legacy variables for compatibility */
 	--text: #6b6375;
 	--text-h: #08060d;
 	--bg: #fff;
