@@ -1,0 +1,31 @@
+{
+  "version": "1.58.2",
+  "viteVersion": "6.4.1",
+  "registerSourceHash": "ea233d95b980072c81eb49458aee55f5d33fdb02",
+  "components": [
+    {
+      "id": "_home_artu_Desktop_projects_tocai_tests_e2e_fixtures_SimpleComponent_SimpleComponent",
+      "filename": "/home/artu/Desktop/projects/tocai/tests/e2e/simple.spec.tsx",
+      "importSource": "./fixtures/SimpleComponent",
+      "remoteName": "SimpleComponent"
+    },
+    {
+      "id": "_home_artu_Desktop_projects_tocai_src_App",
+      "filename": "/home/artu/Desktop/projects/tocai/tests/e2e/smoke.spec.tsx",
+      "importSource": "../../src/App"
+    }
+  ],
+  "sources": {
+    "/home/artu/Desktop/projects/tocai/playwright/index.html": {
+      "timestamp": 1774310291530.2295
+    }
+  },
+  "deps": {
+    "/home/artu/Desktop/projects/tocai/tests/e2e/fixtures/SimpleComponent.tsx": [
+      "/home/artu/Desktop/projects/tocai/tests/e2e/fixtures/SimpleComponent.tsx"
+    ],
+    "/home/artu/Desktop/projects/tocai/src/App.tsx": [
+      "/home/artu/Desktop/projects/tocai/src/App.tsx"
+    ]
+  }
+}
