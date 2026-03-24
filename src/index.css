@@ -1,3 +1,18 @@
+@import "tailwindcss";
+
+@theme inline {
+	--color-primary: #aa3bff;
+	--color-primary-foreground: #ffffff;
+	--color-muted: #3a3a3a;
+	--color-background: #1a1a1a;
+	--color-surface: #252525;
+	--color-surface-elevated: #2a2a2a;
+	--color-border: #3a3a3a;
+	--color-text-primary: #f3f4f6;
+	--color-text-secondary: #9ca3af;
+	--color-canvas: #0a0a0a;
+}
+
 :root {
 	/* Dark theme tokens */
 	--color-background: #1a1a1a;
@@ -7,6 +22,11 @@
 	--color-text-primary: #f3f4f6;
 	--color-text-secondary: #9ca3af;
 	--color-canvas: #0a0a0a;
+
+	/* Slider/Radix UI tokens */
+	--color-primary: #aa3bff;
+	--color-primary-foreground: #ffffff;
+	--color-muted: #3a3a3a;
 
 	/* Rocksmith accent colors */
 	--accent-red: #FF0000;
