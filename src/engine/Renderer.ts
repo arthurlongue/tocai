@@ -14,6 +14,8 @@ export class Renderer {
 	private track: Track | null = null;
 	private frameId: number | null = null;
 	private speed: number = 1.0;
+	private lastRawTime: number = 0;
+	private musicalTime: number = 0;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -44,6 +46,14 @@ export class Renderer {
 	 */
 	getSpeed(): number {
 		return this.speed;
+	}
+
+	/**
+	 * Reset musical time accumulator (call when seeking or stopping)
+	 */
+	resetTime(): void {
+		this.lastRawTime = 0;
+		this.musicalTime = 0;
 	}
 
 	private loop = (): void => {
@@ -77,13 +87,29 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		// DEBUG: Log speed and time calculation
+		// Get current wall-clock time from Tone.js
 		const rawTime = Math.max(0, Tone.getTransport().seconds - delay);
-		const adjustedTime = rawTime * this.speed;
 		
+		// Calculate delta time since last frame
+		const deltaTime = rawTime - this.lastRawTime;
+		
+		// Accumulate musical time at the current speed rate
+		// At 0.5x speed, musical time advances half as fast as wall-clock time
+		// At 2.0x speed, musical time advances twice as fast
+		if (deltaTime >= 0) {
+			this.musicalTime += deltaTime * this.speed;
+		}
+		
+		// Store current raw time for next frame's delta calculation
+		this.lastRawTime = rawTime;
+		
+		// Use accumulated musical time for note positioning
+		const currentTime = this.musicalTime;
+		
+		// DEBUG: Log speed and time calculation
 		// eslint-disable-next-line no-console
 		if (window.location.hostname === "localhost") {
-			console.log("[Renderer] speed:", this.speed, "rawTime:", rawTime.toFixed(2), "adjustedTime:", adjustedTime.toFixed(2));
+			console.log("[Renderer] speed:", this.speed, "rawTime:", rawTime.toFixed(2), "deltaTime:", deltaTime.toFixed(3), "musicalTime:", currentTime.toFixed(2));
 		}
 
 		const dpr = window.devicePixelRatio || 1;
@@ -118,13 +144,24 @@ export class Renderer {
 		if (this.track && this.track.notes.length > 0) {
 			const visibleNotes = calculateVisibleNotes(
 				this.track.notes,
-				adjustedTime,
+				currentTime,
 				width,
 			);
 
 			for (const note of visibleNotes) {
-				this.drawNote(note, adjustedTime, laneHeight);
+				this.drawNote(note, currentTime, laneHeight);
 			}
+		}
+		
+		// Draw string lanes OVER notes for better visibility
+		this.ctx.strokeStyle = "#555";
+		this.ctx.lineWidth = 1.5;
+		for (let i = 0; i < STRING_COUNT; i++) {
+			const y = Math.floor(getNoteY(i, laneHeight));
+			this.ctx.beginPath();
+			this.ctx.moveTo(0, y);
+			this.ctx.lineTo(width, y);
+			this.ctx.stroke();
 		}
 	}
 

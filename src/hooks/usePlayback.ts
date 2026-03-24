@@ -23,10 +23,29 @@ export const usePlayback = () => {
 	const stop = useCallback(() => {
 		// stopAll also calls Tone.getTransport().stop()
 		engine.stopAll();
+		// Reset renderer's musical time accumulator
+		// This ensures visual sync restarts from 0 on stop
+		const canvas = document.querySelector("#visualizer canvas") as HTMLCanvasElement;
+		if (canvas) {
+			const renderer = (canvas as any).__renderer;
+			if (renderer && typeof renderer.resetTime === "function") {
+				renderer.resetTime();
+			}
+		}
 	}, [engine]);
 
 	const seek = useCallback((seconds: number) => {
 		Tone.getTransport().seconds = seconds;
+		// Reset renderer's musical time accumulator on seek
+		// This ensures visual position matches the seeked audio position
+		const canvas = document.querySelector("#visualizer canvas") as HTMLCanvasElement;
+		if (canvas) {
+			const renderer = (canvas as any).__renderer;
+			if (renderer && typeof renderer.resetTime === "function") {
+				renderer.resetTime();
+				renderer.musicalTime = seconds; // Start from seeked position
+			}
+		}
 	}, []);
 
 	return {

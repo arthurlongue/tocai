@@ -55,6 +55,9 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 
 		const renderer = new Renderer(canvas);
 		rendererRef.current = renderer;
+		
+		// Store renderer reference on canvas element for access from hooks
+		(canvas as any).__renderer = renderer;
 
 		if (track) {
 			renderer.setTrack(track);
@@ -80,6 +83,8 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 			renderer.stop();
 			observer.disconnect();
 			window.removeEventListener("resize", resizeCanvas);
+			// Clean up renderer reference
+			delete (canvas as any).__renderer;
 		};
 	}, [track]); // NOTE: Don't add speed here - it would recreate the Renderer
 
