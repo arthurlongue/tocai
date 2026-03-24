@@ -76,7 +76,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 			observer.disconnect();
 			window.removeEventListener("resize", resizeCanvas);
 		};
-	}, [track, speed]);
+	}, [track]); // NOTE: Don't add speed here - it would recreate the Renderer
 
 	// Update track when it changes
 	useEffect(() => {
