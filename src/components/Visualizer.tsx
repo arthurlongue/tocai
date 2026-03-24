@@ -88,6 +88,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 	// Update speed when it changes
 	useEffect(() => {
 		if (rendererRef.current && speed !== undefined) {
+			console.log("[Visualizer] Setting speed:", speed);
 			rendererRef.current.setSpeed(speed);
 		}
 	}, [speed]);

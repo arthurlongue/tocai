@@ -75,11 +75,14 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		// FIX: Apply speed multiplier to wall-clock time for tempo-adjusted visual time
-		// Tone.Transport.seconds returns wall-clock time (not affected by BPM changes)
-		// Multiplying by speed gives us the adjusted time that matches audio tempo
+		// DEBUG: Log speed and time calculation
 		const rawTime = Math.max(0, Tone.getTransport().seconds - delay);
 		const adjustedTime = rawTime * this.speed;
+		
+		// eslint-disable-next-line no-console
+		if (window.location.hostname === "localhost") {
+			console.log("[Renderer] speed:", this.speed, "rawTime:", rawTime.toFixed(2), "adjustedTime:", adjustedTime.toFixed(2));
+		}
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
