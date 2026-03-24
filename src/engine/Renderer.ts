@@ -14,8 +14,8 @@ export class Renderer {
 	private track: Track | null = null;
 	private frameId: number | null = null;
 	private speed: number = 1.0;
-	private lastTransportTime: number = 0;
-	private songPosition: number = 0;
+	private speedChangeTime: number = 0; // Transport time when speed last changed
+	private positionAtSpeedChange: number = 0; // Song position when speed changed
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -36,8 +36,18 @@ export class Renderer {
 	 * @param speed - Speed multiplier (0.25 to 2.0)
 	 */
 	setSpeed(speed: number): void {
+		const transportTime = Tone.getTransport().seconds;
+		
+		// Calculate current song position before speed change
+		const currentPosition = this.positionAtSpeedChange + (transportTime - this.speedChangeTime) * this.speed;
+		
 		console.log("[Renderer.setSpeed] Setting speed from", this.speed, "to", speed);
+		console.log("[Renderer.setSpeed] At transportTime:", transportTime.toFixed(2), "position:", currentPosition.toFixed(2));
+		
 		this.speed = speed;
+		this.speedChangeTime = transportTime;
+		this.positionAtSpeedChange = currentPosition;
+		
 		console.log("[Renderer.setSpeed] After assignment, this.speed =", this.speed);
 	}
 
@@ -54,9 +64,9 @@ export class Renderer {
 	 * @param time - The time position to reset to (defaults to 0)
 	 */
 	resetTime(time: number = 0): void {
-		this.lastTransportTime = Tone.getTransport().seconds;
-		this.songPosition = time;
-		console.log("[Renderer.resetTime] Reset to songPosition:", time, "transportTime:", this.lastTransportTime);
+		this.speedChangeTime = Tone.getTransport().seconds;
+		this.positionAtSpeedChange = time;
+		console.log("[Renderer.resetTime] Reset to position:", time);
 	}
 
 	/**
@@ -64,9 +74,9 @@ export class Renderer {
 	 * Call when starting playback to ensure sync
 	 */
 	initTime(): void {
-		this.lastTransportTime = Tone.getTransport().seconds;
-		this.songPosition = Tone.getTransport().seconds;
-		console.log("[Renderer.initTime] Initialized songPosition to:", this.songPosition);
+		this.speedChangeTime = Tone.getTransport().seconds;
+		this.positionAtSpeedChange = Tone.getTransport().seconds;
+		console.log("[Renderer.initTime] Initialized position to:", this.positionAtSpeedChange);
 	}
 
 	private loop = (): void => {
@@ -103,22 +113,14 @@ export class Renderer {
 		// Get current transport time (wall-clock since transport started)
 		const transportTime = Tone.getTransport().seconds;
 		
-		// Calculate delta time since last frame
-		const deltaTime = transportTime - this.lastTransportTime;
-		
-		// Accumulate song position at the current speed rate
-		// At 0.5x speed, song position advances half as fast
-		// At 2.0x speed, song position advances twice as fast
-		if (deltaTime >= 0) {
-			this.songPosition += deltaTime * this.speed;
-		}
-		
-		// Store current transport time for next frame's delta calculation
-		this.lastTransportTime = transportTime;
+		// Calculate current song position:
+		// position = position_at_last_speed_change + (elapsed_transport_time * speed)
+		// This ensures smooth speed transitions without jumps
+		const songPosition = this.positionAtSpeedChange + (transportTime - this.speedChangeTime) * this.speed;
 		
 		// Apply delay compensation for audio latency
 		// This pushes notes to the right so they hit the line when sound plays
-		const currentTime = Math.max(0, this.songPosition - delay);
+		const currentTime = Math.max(0, songPosition - delay);
 		
 		// DEBUG: Log speed and time calculation
 		// eslint-disable-next-line no-console
@@ -129,9 +131,8 @@ export class Renderer {
 				console.log(
 					"[Renderer] speed:", this.speed.toFixed(2),
 					"transportTime:", transportTime.toFixed(2),
-					"songPosition:", this.songPosition.toFixed(2),
-					"currentTime:", currentTime.toFixed(2),
-					"deltaTime:", deltaTime.toFixed(3)
+					"songPosition:", songPosition.toFixed(2),
+					"currentTime:", currentTime.toFixed(2)
 				);
 			}
 		}
