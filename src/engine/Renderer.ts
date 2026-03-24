@@ -14,8 +14,8 @@ export class Renderer {
 	private track: Track | null = null;
 	private frameId: number | null = null;
 	private speed: number = 1.0;
-	private lastRawTime: number = 0;
-	private musicalTime: number = 0;
+	private lastTransportTime: number = 0;
+	private songPosition: number = 0;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -49,24 +49,24 @@ export class Renderer {
 	}
 
 	/**
-	 * Reset musical time accumulator to a specific position
+	 * Reset song position to a specific time
 	 * Call when seeking or stopping to resync with audio
 	 * @param time - The time position to reset to (defaults to 0)
 	 */
 	resetTime(time: number = 0): void {
-		this.lastRawTime = Tone.getTransport().seconds;
-		this.musicalTime = time;
-		console.log("[Renderer.resetTime] Reset to musicalTime:", time, "rawTime:", this.lastRawTime);
+		this.lastTransportTime = Tone.getTransport().seconds;
+		this.songPosition = time;
+		console.log("[Renderer.resetTime] Reset to songPosition:", time, "transportTime:", this.lastTransportTime);
 	}
 
 	/**
-	 * Initialize musical time from current Transport position
+	 * Initialize song position from current Transport position
 	 * Call when starting playback to ensure sync
 	 */
 	initTime(): void {
-		this.lastRawTime = Tone.getTransport().seconds;
-		this.musicalTime = Tone.getTransport().seconds;
-		console.log("[Renderer.initTime] Initialized to:", this.musicalTime);
+		this.lastTransportTime = Tone.getTransport().seconds;
+		this.songPosition = Tone.getTransport().seconds;
+		console.log("[Renderer.initTime] Initialized songPosition to:", this.songPosition);
 	}
 
 	private loop = (): void => {
@@ -100,37 +100,38 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		// Get current wall-clock time from Tone.js
-		const rawTime = Math.max(0, Tone.getTransport().seconds - delay);
+		// Get current transport time (wall-clock since transport started)
+		const transportTime = Tone.getTransport().seconds;
 		
 		// Calculate delta time since last frame
-		const deltaTime = rawTime - this.lastRawTime;
+		const deltaTime = transportTime - this.lastTransportTime;
 		
-		// Accumulate musical time at the current speed rate
-		// At 0.5x speed, musical time advances half as fast as wall-clock time
-		// At 2.0x speed, musical time advances twice as fast
+		// Accumulate song position at the current speed rate
+		// At 0.5x speed, song position advances half as fast
+		// At 2.0x speed, song position advances twice as fast
 		if (deltaTime >= 0) {
-			this.musicalTime += deltaTime * this.speed;
+			this.songPosition += deltaTime * this.speed;
 		}
 		
-		// Store current raw time for next frame's delta calculation
-		this.lastRawTime = rawTime;
+		// Store current transport time for next frame's delta calculation
+		this.lastTransportTime = transportTime;
 		
-		// Use accumulated musical time for note positioning
-		const currentTime = this.musicalTime;
+		// Apply delay compensation for audio latency
+		// This pushes notes to the right so they hit the line when sound plays
+		const currentTime = Math.max(0, this.songPosition - delay);
 		
 		// DEBUG: Log speed and time calculation
 		// eslint-disable-next-line no-console
 		if (window.location.hostname === "localhost") {
 			// Only log every 30 frames to reduce noise
-			const frameNum = Math.floor(rawTime * 60);
+			const frameNum = Math.floor(transportTime * 60);
 			if (frameNum % 30 === 0) {
 				console.log(
 					"[Renderer] speed:", this.speed.toFixed(2),
-					"rawTime:", rawTime.toFixed(2),
-					"musicalTime:", currentTime.toFixed(2),
-					"deltaTime:", deltaTime.toFixed(3),
-					"transport.seconds:", Tone.getTransport().seconds.toFixed(2)
+					"transportTime:", transportTime.toFixed(2),
+					"songPosition:", this.songPosition.toFixed(2),
+					"currentTime:", currentTime.toFixed(2),
+					"deltaTime:", deltaTime.toFixed(3)
 				);
 			}
 		}
