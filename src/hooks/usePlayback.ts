@@ -51,7 +51,16 @@ export const usePlayback = () => {
 		if (canvas) {
 			const renderer = (canvas as any).__renderer;
 			if (renderer && typeof renderer.resetTime === "function") {
+				// Reset to the seeked position so accumulation continues from there
 				renderer.resetTime(seconds);
+			}
+		}
+		// Also update minimap playhead immediately
+		const minimapCanvas = document.querySelector("canvas.h-12") as HTMLCanvasElement;
+		if (minimapCanvas) {
+			const minimapRenderer = (minimapCanvas as any).__minimapRenderer;
+			if (minimapRenderer && typeof minimapRenderer.draw === "function") {
+				minimapRenderer.draw(seconds);
 			}
 		}
 	}, []);

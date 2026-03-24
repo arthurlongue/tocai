@@ -122,7 +122,11 @@ export class Renderer {
 		// DEBUG: Log speed and time calculation
 		// eslint-disable-next-line no-console
 		if (window.location.hostname === "localhost") {
-			console.log("[Renderer] speed:", this.speed, "rawTime:", rawTime.toFixed(2), "deltaTime:", deltaTime.toFixed(3), "musicalTime:", currentTime.toFixed(2));
+			// Only log every 30 frames to reduce noise
+			const frameNum = Math.floor(rawTime * 60);
+			if (frameNum % 30 === 0) {
+				console.log("[Renderer] speed:", this.speed.toFixed(2), "rawTime:", rawTime.toFixed(2), "musicalTime:", currentTime.toFixed(2), "deltaTime:", deltaTime.toFixed(3));
+			}
 		}
 
 		const dpr = window.devicePixelRatio || 1;

@@ -42,6 +42,8 @@ export const Minimap: React.FC<MinimapProps> = ({ track, onSeek }) => {
 			if (animationFrameRef.current !== null) {
 				cancelAnimationFrame(animationFrameRef.current);
 			}
+			// Clean up renderer reference
+			delete (canvas as any).__minimapRenderer;
 		};
 	}, [track]);
 
