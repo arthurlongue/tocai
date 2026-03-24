@@ -107,8 +107,16 @@ expected: "Phase 04 UAT complete - major visual redesign needed"
 ## Issue Summary: All Fixes Needed
 
 ### Functional Issues (2)
-1. **Canvas sync with speed change** - Canvas scrolling speed doesn't change when tempo changes
-2. **Minimap at different speeds** - Blocked by #1
+1. **Canvas sync with speed change** - Audio tempo changes but canvas doesn't match
+   - **Status:** Multiple fix attempts, still broken
+   - **Root cause identified:** Tone.Transport.bpm changes affect Transport.seconds rate
+   - **Current approach:** Using Transport.seconds directly (should work but doesn't)
+   - **Remaining issues:**
+     - Notes don't change scroll speed when speed slider changes
+     - Seek doesn't work correctly (minimap and slider)
+     - Playhead vanishes off minimap canvas
+     - Song doesn't end at right position
+     - Audio sync drift at slow speeds (0.25x)
 
 ### Visual Redesign Required (Complete overhaul)
 
