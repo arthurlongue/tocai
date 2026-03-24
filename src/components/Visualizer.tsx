@@ -12,11 +12,6 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<Renderer | null>(null);
 
-	// Debug: Log speed prop changes
-	useEffect(() => {
-		console.log("[Visualizer] speed prop changed to:", speed);
-	}, [speed]);
-
 	// Initialize Renderer
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -27,66 +22,42 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 		const resizeCanvas = () => {
 			const dpr = window.devicePixelRatio || 1;
 			const rect = parent.getBoundingClientRect();
-
-			// Only resize if dimensions are valid
 			if (rect.width === 0 || rect.height === 0) return;
 
 			const newWidth = rect.width * dpr;
 			const newHeight = rect.height * dpr;
 
 			if (canvas.width !== newWidth || canvas.height !== newHeight) {
-				// Set physical dimensions
 				canvas.width = newWidth;
 				canvas.height = newHeight;
-
 				const ctx = canvas.getContext("2d");
-				if (ctx) {
-					ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-				}
-
-				if (rendererRef.current) {
-					rendererRef.current.draw();
-				}
+				if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+				if (rendererRef.current) rendererRef.current.draw();
 			}
 		};
 
-		// Initial resize
 		resizeCanvas();
 
 		const renderer = new Renderer(canvas);
 		rendererRef.current = renderer;
-		
-		// Store renderer reference on canvas element for access from hooks
 		(canvas as any).__renderer = renderer;
 
-		if (track) {
-			renderer.setTrack(track);
-		}
-
-		// Initialize speed if provided
-		if (speed !== undefined) {
-			renderer.setSpeed(speed);
-		}
+		if (track) renderer.setTrack(track);
+		if (speed !== undefined) renderer.setSpeed(speed);
 
 		renderer.start();
 
-		// Use ResizeObserver to reliably catch container size changes
-		const observer = new ResizeObserver(() => {
-			resizeCanvas();
-		});
+		const observer = new ResizeObserver(resizeCanvas);
 		observer.observe(parent);
-
-		// Also listen to window resize as fallback
 		window.addEventListener("resize", resizeCanvas);
 
 		return () => {
 			renderer.stop();
 			observer.disconnect();
 			window.removeEventListener("resize", resizeCanvas);
-			// Clean up renderer reference
 			delete (canvas as any).__renderer;
 		};
-	}, [track]); // NOTE: Don't add speed here - it would recreate the Renderer
+	}, [track]);
 
 	// Update track when it changes
 	useEffect(() => {
@@ -95,13 +66,10 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 		}
 	}, [track]);
 
-	// Update speed when it changes
+	// Update speed tracking
 	useEffect(() => {
-		console.log("[Visualizer] useEffect: speed =", speed, "renderer exists:", !!rendererRef.current);
 		if (rendererRef.current && speed !== undefined) {
-			console.log("[Visualizer] Calling renderer.setSpeed(", speed, ")");
 			rendererRef.current.setSpeed(speed);
-			console.log("[Visualizer] After setSpeed, renderer.getSpeed():", rendererRef.current.getSpeed());
 		}
 	}, [speed]);
 
