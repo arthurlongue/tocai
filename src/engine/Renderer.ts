@@ -14,8 +14,6 @@ export class Renderer {
 	private track: Track | null = null;
 	private frameId: number | null = null;
 	private speed: number = 1.0;
-	private speedChangeTime: number = 0; // Transport time when speed last changed
-	private positionAtSpeedChange: number = 0; // Song position when speed changed
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -32,23 +30,15 @@ export class Renderer {
 
 	/**
 	 * Set playback speed multiplier for visual synchronization
-	 * Called when user changes speed to keep canvas scroll in sync with audio
+	 * Note: Audio speed is handled by Tone.Transport.bpm in AudioEngine
+	 * This method just tracks the speed value for potential future use
 	 * @param speed - Speed multiplier (0.25 to 2.0)
 	 */
 	setSpeed(speed: number): void {
-		const transportTime = Tone.getTransport().seconds;
-		
-		// Calculate current song position before speed change
-		const currentPosition = this.positionAtSpeedChange + (transportTime - this.speedChangeTime) * this.speed;
-		
-		console.log("[Renderer.setSpeed] Setting speed from", this.speed, "to", speed);
-		console.log("[Renderer.setSpeed] At transportTime:", transportTime.toFixed(2), "position:", currentPosition.toFixed(2));
-		
+		console.log("[Renderer.setSpeed] Speed changed to:", speed);
 		this.speed = speed;
-		this.speedChangeTime = transportTime;
-		this.positionAtSpeedChange = currentPosition;
-		
-		console.log("[Renderer.setSpeed] After assignment, this.speed =", this.speed);
+		// Note: We don't need to track anchor points because
+		// Tone.Transport.seconds already accounts for BPM changes
 	}
 
 	/**
@@ -59,24 +49,15 @@ export class Renderer {
 	}
 
 	/**
-	 * Reset song position to a specific time
-	 * Call when seeking or stopping to resync with audio
-	 * @param time - The time position to reset to (defaults to 0)
+	 * Reset is not needed - Tone.Transport.seconds is the source of truth
+	 * These methods kept for API compatibility but are now no-ops
 	 */
-	resetTime(time: number = 0): void {
-		this.speedChangeTime = Tone.getTransport().seconds;
-		this.positionAtSpeedChange = time;
-		console.log("[Renderer.resetTime] Reset to position:", time);
+	resetTime(_time: number = 0): void {
+		// No-op: Tone.Transport.seconds is authoritative
 	}
 
-	/**
-	 * Initialize song position from current Transport position
-	 * Call when starting playback to ensure sync
-	 */
 	initTime(): void {
-		this.speedChangeTime = Tone.getTransport().seconds;
-		this.positionAtSpeedChange = Tone.getTransport().seconds;
-		console.log("[Renderer.initTime] Initialized position to:", this.positionAtSpeedChange);
+		// No-op: Tone.Transport.seconds is authoritative
 	}
 
 	private loop = (): void => {
@@ -110,19 +91,16 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		// Get current transport time (wall-clock since transport started)
+		// Tone.Transport.seconds is the authoritative time source
+		// It already accounts for BPM changes (speed), so no additional multiplication needed
+		// At 0.25x BPM, Transport.seconds advances at 0.25x rate automatically
 		const transportTime = Tone.getTransport().seconds;
-		
-		// Calculate current song position:
-		// position = position_at_last_speed_change + (elapsed_transport_time * speed)
-		// This ensures smooth speed transitions without jumps
-		const songPosition = this.positionAtSpeedChange + (transportTime - this.speedChangeTime) * this.speed;
 		
 		// Apply delay compensation for audio latency
 		// This pushes notes to the right so they hit the line when sound plays
-		const currentTime = Math.max(0, songPosition - delay);
+		const currentTime = Math.max(0, transportTime - delay);
 		
-		// DEBUG: Log speed and time calculation
+		// DEBUG: Log time calculation
 		// eslint-disable-next-line no-console
 		if (window.location.hostname === "localhost") {
 			// Only log every 30 frames to reduce noise
@@ -131,7 +109,6 @@ export class Renderer {
 				console.log(
 					"[Renderer] speed:", this.speed.toFixed(2),
 					"transportTime:", transportTime.toFixed(2),
-					"songPosition:", songPosition.toFixed(2),
 					"currentTime:", currentTime.toFixed(2)
 				);
 			}
