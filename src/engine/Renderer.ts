@@ -34,7 +34,9 @@ export class Renderer {
 	 * @param speed - Speed multiplier (0.25 to 2.0)
 	 */
 	setSpeed(speed: number): void {
+		console.log("[Renderer.setSpeed] Setting speed from", this.speed, "to", speed);
 		this.speed = speed;
+		console.log("[Renderer.setSpeed] After assignment, this.speed =", this.speed);
 	}
 
 	/**

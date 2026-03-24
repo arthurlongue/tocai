@@ -12,6 +12,11 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<Renderer | null>(null);
 
+	// Debug: Log speed prop changes
+	useEffect(() => {
+		console.log("[Visualizer] speed prop changed to:", speed);
+	}, [speed]);
+
 	// Initialize Renderer
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -87,9 +92,11 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 
 	// Update speed when it changes
 	useEffect(() => {
+		console.log("[Visualizer] useEffect: speed =", speed, "renderer exists:", !!rendererRef.current);
 		if (rendererRef.current && speed !== undefined) {
-			console.log("[Visualizer] Setting speed:", speed);
+			console.log("[Visualizer] Calling renderer.setSpeed(", speed, ")");
 			rendererRef.current.setSpeed(speed);
+			console.log("[Visualizer] After setSpeed, renderer.getSpeed():", rendererRef.current.getSpeed());
 		}
 	}, [speed]);
 
