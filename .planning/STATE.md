@@ -7,14 +7,11 @@
 **Phase 4**: Integration & Polish
 
 ## Progress Tracking
-- [ ] Milestone 1: Core MVP (85%)
+- [x] Milestone 1: Core MVP (100%)
   - [x] Phase 1: Domain & Parsing Foundation (100%)
   - [x] Phase 2: Basic Audio Engine (100%)
   - [x] Phase 3: Core Visualizer (Canvas) (100%)
-  - [ ] Phase 4: Integration & Polish (60%)
-    - [x] Plan 01: Transport Bar (100%)
-    - [x] Plan 02: Minimap & Visual Polish (100%)
-    - [ ] Plan 03: Responsive Design & E2E Testing (pending)
+  - [x] Phase 4: Integration & Polish (100%)
 
 ## Key Decisions
 - **Architecture**: Separated into `domain/` (data logic), `engine/` (audio/visual logic), and `components/` (UI logic).
@@ -29,10 +26,17 @@
 - **Transport Bar**: Full-featured controls below visualizer (PLAY/PAUSE/STOP, seek, speed 0.25x-2.0x, volume).
 
 ## Next Steps
-- Complete Plan 03: Responsive Design & E2E Testing
-- Final E2E testing of the Core MVP
+- Run `/gsd:verify-work 04` to verify entire phase
+- Run `/gsd:audit-milestone 1` to verify Core MVP completion
 
 ## Session Log
+- **2026-03-23**: Completed Plan 04-03: E2E Testing & Integration
+  - Installed and configured Playwright for E2E testing
+  - Created 40 tests across 4 spec files (smoke, transport, minimap, responsive)
+  - Created visual regression baselines for responsive layouts
+  - Added test fixture (test-song.gp5) for E2E flows
+  - Manual UAT checklist documented in SUMMARY.md
+
 - **2026-03-23**: Completed Plan 04-02: Minimap & Visual Polish
   - Created MinimapRenderer class for compressed timeline rendering
   - Implemented Minimap component with click-to-seek
