@@ -5,9 +5,10 @@ import { Renderer } from "../engine/Renderer";
 
 interface VisualizerProps {
 	track?: Track;
+	speed?: number;
 }
 
-export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
+export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<Renderer | null>(null);
 
@@ -54,6 +55,11 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 			renderer.setTrack(track);
 		}
 
+		// Initialize speed if provided
+		if (speed !== undefined) {
+			renderer.setSpeed(speed);
+		}
+
 		renderer.start();
 
 		// Use ResizeObserver to reliably catch container size changes
@@ -70,7 +76,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 			observer.disconnect();
 			window.removeEventListener("resize", resizeCanvas);
 		};
-	}, [track]);
+	}, [track, speed]);
 
 	// Update track when it changes
 	useEffect(() => {
@@ -78,6 +84,13 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 			rendererRef.current.setTrack(track);
 		}
 	}, [track]);
+
+	// Update speed when it changes
+	useEffect(() => {
+		if (rendererRef.current && speed !== undefined) {
+			rendererRef.current.setSpeed(speed);
+		}
+	}, [speed]);
 
 	return (
 		<div

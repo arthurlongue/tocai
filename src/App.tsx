@@ -12,7 +12,7 @@ import "./App.css";
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
 	const { stop, seek } = usePlayback();
-	const { resetSpeed } = useSpeedControl();
+	const { speed, resetSpeed } = useSpeedControl();
 
 	// Load song into audio engine when it changes
 	useEffect(() => {
@@ -90,7 +90,7 @@ function App() {
 
 						{/* Visualizer Area */}
 						<div className="w-full">
-							<Visualizer track={song.tracks[0]} />
+							<Visualizer track={song.tracks[0]} speed={speed} />
 						</div>
 
 						{/* Transport Bar */}
