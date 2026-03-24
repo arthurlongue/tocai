@@ -14,6 +14,11 @@ function App() {
 	const { stop, seek } = usePlayback();
 	const { speed, resetSpeed } = useSpeedControl();
 
+	// Debug: Log speed changes in App
+	useEffect(() => {
+		console.log("[App] speed changed to:", speed);
+	}, [speed]);
+
 	// Load song into audio engine when it changes
 	useEffect(() => {
 		if (song && song.tracks.length > 0) {
