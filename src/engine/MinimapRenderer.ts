@@ -72,14 +72,27 @@ export class MinimapRenderer {
 			this.ctx.fillRect(x, y, noteWidth, laneHeight);
 		}
 
-		// Draw current position playhead
-		const playheadX = currentTime * pixelsPerSecond;
+		// Draw current position playhead (clamped to canvas bounds)
+		const playheadX = Math.min(width, Math.max(0, currentTime * pixelsPerSecond));
 		this.ctx.strokeStyle = "#fff";
 		this.ctx.lineWidth = 2;
 		this.ctx.beginPath();
 		this.ctx.moveTo(playheadX, 0);
 		this.ctx.lineTo(playheadX, height);
 		this.ctx.stroke();
+		
+		// Draw song duration marker at end
+		this.ctx.fillStyle = "#666";
+		this.ctx.font = "10px sans-serif";
+		this.ctx.textAlign = "right";
+		const durationText = this.formatDuration(this.songDuration);
+		this.ctx.fillText(durationText, width - 2, height - 2);
+	}
+	
+	private formatDuration(seconds: number): string {
+		const mins = Math.floor(seconds / 60);
+		const secs = Math.floor(seconds % 60);
+		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	}
 
 	getTimeFromX(x: number): number {
