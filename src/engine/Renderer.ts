@@ -27,9 +27,16 @@ export class Renderer {
 		this.track = track;
 	}
 
+	private loop = (): void => {
+		this.draw();
+		if (this.frameId !== null) {
+			this.frameId = window.requestAnimationFrame(this.loop);
+		}
+	};
+
 	start(): void {
 		if (this.frameId === null) {
-			this.frameId = window.requestAnimationFrame(() => this.render());
+			this.frameId = window.requestAnimationFrame(this.loop);
 		}
 	}
 
@@ -40,7 +47,7 @@ export class Renderer {
 		}
 	}
 
-	render(): void {
+	draw(): void {
 		const context = Tone.getContext();
 		const latency = (context.rawContext as AudioContext).outputLatency || 0;
 		// Tone.js schedules events lookAhead seconds in the future
@@ -92,11 +99,6 @@ export class Renderer {
 			for (const note of visibleNotes) {
 				this.drawNote(note, currentTime, laneHeight);
 			}
-		}
-
-		// Render loop
-		if (this.frameId !== null) {
-			this.frameId = window.requestAnimationFrame(() => this.render());
 		}
 	}
 

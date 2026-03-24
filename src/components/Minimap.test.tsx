@@ -18,9 +18,9 @@ const mockCtx = {
 	moveTo: vi.fn(),
 	lineTo: vi.fn(),
 	stroke: vi.fn(),
-	set fillStyle(val: string) {},
-	set strokeStyle(val: string) {},
-	set lineWidth(val: number) {},
+	set fillStyle(_val: string) {},
+	set strokeStyle(_val: string) {},
+	set lineWidth(_val: number) {},
 };
 
 const createMockTrack = (): Track => ({

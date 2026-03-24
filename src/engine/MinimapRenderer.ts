@@ -1,5 +1,4 @@
-import * as Tone from "tone";
-import type { PlaybackNote, Track } from "../domain/types";
+import type { Track } from "../domain/types";
 import { STRING_COLORS, STRING_COUNT } from "./constants";
 
 export class MinimapRenderer {

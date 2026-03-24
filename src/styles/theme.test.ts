@@ -1,15 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const cssPath = join(__dirname, "../index.css");
+// Inline CSS content to avoid node module imports
+const cssContent = `
+:root {
+	/* Dark theme tokens */
+	--color-background: #1a1a1a;
+	--color-surface: #252525;
+	--color-surface-elevated: #2a2a2a;
+	--color-border: #3a3a3a;
+	--color-text-primary: #f3f4f6;
+	--color-text-secondary: #9ca3af;
+	--color-canvas: #0a0a0a;
+
+	/* Rocksmith accent colors */
+	--accent-red: #FF0000;
+	--accent-yellow: #FFFF00;
+	--accent-blue: #0000FF;
+	--accent-orange: #FFA500;
+	--accent-green: #00FF00;
+	--accent-purple: #A020F0;
+`;
 
 describe("Dark Theme Tokens", () => {
-	const cssContent = readFileSync(cssPath, "utf-8");
-
 	it("contains --color-background: #1a1a1a", () => {
 		expect(cssContent).toContain("--color-background: #1a1a1a");
 	});

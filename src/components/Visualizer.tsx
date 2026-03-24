@@ -21,17 +21,26 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track }) => {
 		const resizeCanvas = () => {
 			const dpr = window.devicePixelRatio || 1;
 			const rect = parent.getBoundingClientRect();
-			
+
 			// Only resize if dimensions are valid
 			if (rect.width === 0 || rect.height === 0) return;
 
-			// Set physical dimensions
-			canvas.width = rect.width * dpr;
-			canvas.height = rect.height * dpr;
+			const newWidth = rect.width * dpr;
+			const newHeight = rect.height * dpr;
 
-			const ctx = canvas.getContext("2d");
-			if (ctx) {
-				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			if (canvas.width !== newWidth || canvas.height !== newHeight) {
+				// Set physical dimensions
+				canvas.width = newWidth;
+				canvas.height = newHeight;
+
+				const ctx = canvas.getContext("2d");
+				if (ctx) {
+					ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+				}
+
+				if (rendererRef.current) {
+					rendererRef.current.draw();
+				}
 			}
 		};
 
