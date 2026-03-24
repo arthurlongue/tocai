@@ -14,6 +14,15 @@ export const usePlayback = () => {
 		// It is a no-op if the context is already started.
 		await Tone.start();
 		Tone.getTransport().start();
+		// Initialize renderer's musical time to match current Transport position
+		// This ensures visual sync is correct when starting playback
+		const canvas = document.querySelector("#visualizer canvas") as HTMLCanvasElement;
+		if (canvas) {
+			const renderer = (canvas as any).__renderer;
+			if (renderer && typeof renderer.initTime === "function") {
+				renderer.initTime();
+			}
+		}
 	}, []);
 
 	const pause = useCallback(() => {
@@ -29,7 +38,7 @@ export const usePlayback = () => {
 		if (canvas) {
 			const renderer = (canvas as any).__renderer;
 			if (renderer && typeof renderer.resetTime === "function") {
-				renderer.resetTime();
+				renderer.resetTime(0);
 			}
 		}
 	}, [engine]);
@@ -42,8 +51,7 @@ export const usePlayback = () => {
 		if (canvas) {
 			const renderer = (canvas as any).__renderer;
 			if (renderer && typeof renderer.resetTime === "function") {
-				renderer.resetTime();
-				renderer.musicalTime = seconds; // Start from seeked position
+				renderer.resetTime(seconds);
 			}
 		}
 	}, []);

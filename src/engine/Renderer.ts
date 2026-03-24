@@ -49,11 +49,24 @@ export class Renderer {
 	}
 
 	/**
-	 * Reset musical time accumulator (call when seeking or stopping)
+	 * Reset musical time accumulator to a specific position
+	 * Call when seeking or stopping to resync with audio
+	 * @param time - The time position to reset to (defaults to 0)
 	 */
-	resetTime(): void {
-		this.lastRawTime = 0;
-		this.musicalTime = 0;
+	resetTime(time: number = 0): void {
+		this.lastRawTime = Tone.getTransport().seconds;
+		this.musicalTime = time;
+		console.log("[Renderer.resetTime] Reset to musicalTime:", time, "rawTime:", this.lastRawTime);
+	}
+
+	/**
+	 * Initialize musical time from current Transport position
+	 * Call when starting playback to ensure sync
+	 */
+	initTime(): void {
+		this.lastRawTime = Tone.getTransport().seconds;
+		this.musicalTime = Tone.getTransport().seconds;
+		console.log("[Renderer.initTime] Initialized to:", this.musicalTime);
 	}
 
 	private loop = (): void => {
