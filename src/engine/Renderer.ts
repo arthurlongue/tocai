@@ -35,10 +35,7 @@ export class Renderer {
 	 * @param speed - Speed multiplier (0.25 to 2.0)
 	 */
 	setSpeed(speed: number): void {
-		console.log("[Renderer.setSpeed] Speed changed to:", speed);
 		this.speed = speed;
-		// Note: We don't need to track anchor points because
-		// Tone.Transport.seconds already accounts for BPM changes
 	}
 
 	/**
@@ -99,20 +96,6 @@ export class Renderer {
 		// Apply delay compensation for audio latency
 		// This pushes notes to the right so they hit the line when sound plays
 		const currentTime = Math.max(0, transportTime - delay);
-		
-		// DEBUG: Log time calculation
-		// eslint-disable-next-line no-console
-		if (window.location.hostname === "localhost") {
-			// Only log every 30 frames to reduce noise
-			const frameNum = Math.floor(transportTime * 60);
-			if (frameNum % 30 === 0) {
-				console.log(
-					"[Renderer] speed:", this.speed.toFixed(2),
-					"transportTime:", transportTime.toFixed(2),
-					"currentTime:", currentTime.toFixed(2)
-				);
-			}
-		}
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;

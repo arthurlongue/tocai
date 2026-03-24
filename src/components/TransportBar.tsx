@@ -50,10 +50,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	// Handle speed changes
 	const handleSpeedChange = (value: number[]) => {
 		const newSpeed = value[0];
-		console.log("[TransportBar] handleSpeedChange called with:", newSpeed);
-		console.log("[TransportBar] Calling setSpeedState(", newSpeed, ")");
 		setSpeedState(newSpeed);
-		console.log("[TransportBar] After setSpeedState, speed state =", newSpeed);
 	};
 
 	// Format time as M:SS
