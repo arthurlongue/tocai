@@ -32,37 +32,10 @@ export const usePlayback = () => {
 	const stop = useCallback(() => {
 		// stopAll also calls Tone.getTransport().stop()
 		engine.stopAll();
-		// Reset renderer's musical time accumulator
-		// This ensures visual sync restarts from 0 on stop
-		const canvas = document.querySelector("#visualizer canvas") as HTMLCanvasElement;
-		if (canvas) {
-			const renderer = (canvas as any).__renderer;
-			if (renderer && typeof renderer.resetTime === "function") {
-				renderer.resetTime(0);
-			}
-		}
 	}, [engine]);
 
 	const seek = useCallback((seconds: number) => {
 		Tone.getTransport().seconds = seconds;
-		// Reset renderer's musical time accumulator on seek
-		// This ensures visual position matches the seeked audio position
-		const canvas = document.querySelector("#visualizer canvas") as HTMLCanvasElement;
-		if (canvas) {
-			const renderer = (canvas as any).__renderer;
-			if (renderer && typeof renderer.resetTime === "function") {
-				// Reset to the seeked position so accumulation continues from there
-				renderer.resetTime(seconds);
-			}
-		}
-		// Also update minimap playhead immediately
-		const minimapCanvas = document.querySelector("canvas.h-12") as HTMLCanvasElement;
-		if (minimapCanvas) {
-			const minimapRenderer = (minimapCanvas as any).__minimapRenderer;
-			if (minimapRenderer && typeof minimapRenderer.draw === "function") {
-				minimapRenderer.draw(seconds);
-			}
-		}
 	}, []);
 
 	return {
