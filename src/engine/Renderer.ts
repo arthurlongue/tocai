@@ -13,6 +13,7 @@ export class Renderer {
 	private ctx: CanvasRenderingContext2D;
 	private track: Track | null = null;
 	private frameId: number | null = null;
+	private speed: number = 1.0;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -25,6 +26,22 @@ export class Renderer {
 
 	setTrack(track: Track): void {
 		this.track = track;
+	}
+
+	/**
+	 * Set playback speed multiplier for visual synchronization
+	 * Called when user changes speed to keep canvas scroll in sync with audio
+	 * @param speed - Speed multiplier (0.25 to 2.0)
+	 */
+	setSpeed(speed: number): void {
+		this.speed = speed;
+	}
+
+	/**
+	 * Get current speed multiplier
+	 */
+	getSpeed(): number {
+		return this.speed;
 	}
 
 	private loop = (): void => {
@@ -58,7 +75,11 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		const currentTime = Math.max(0, Tone.getTransport().seconds - delay);
+		// FIX: Apply speed multiplier to wall-clock time for tempo-adjusted visual time
+		// Tone.Transport.seconds returns wall-clock time (not affected by BPM changes)
+		// Multiplying by speed gives us the adjusted time that matches audio tempo
+		const rawTime = Math.max(0, Tone.getTransport().seconds - delay);
+		const adjustedTime = rawTime * this.speed;
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
@@ -92,12 +113,12 @@ export class Renderer {
 		if (this.track && this.track.notes.length > 0) {
 			const visibleNotes = calculateVisibleNotes(
 				this.track.notes,
-				currentTime,
+				adjustedTime,
 				width,
 			);
 
 			for (const note of visibleNotes) {
-				this.drawNote(note, currentTime, laneHeight);
+				this.drawNote(note, adjustedTime, laneHeight);
 			}
 		}
 	}
