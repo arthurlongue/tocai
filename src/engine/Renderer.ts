@@ -125,7 +125,13 @@ export class Renderer {
 			// Only log every 30 frames to reduce noise
 			const frameNum = Math.floor(rawTime * 60);
 			if (frameNum % 30 === 0) {
-				console.log("[Renderer] speed:", this.speed.toFixed(2), "rawTime:", rawTime.toFixed(2), "musicalTime:", currentTime.toFixed(2), "deltaTime:", deltaTime.toFixed(3));
+				console.log(
+					"[Renderer] speed:", this.speed.toFixed(2),
+					"rawTime:", rawTime.toFixed(2),
+					"musicalTime:", currentTime.toFixed(2),
+					"deltaTime:", deltaTime.toFixed(3),
+					"transport.seconds:", Tone.getTransport().seconds.toFixed(2)
+				);
 			}
 		}
 
