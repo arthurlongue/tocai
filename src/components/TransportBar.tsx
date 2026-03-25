@@ -63,41 +63,47 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	const isPlaying = transportStatus === "started";
 
 	return (
-		<div className="w-full bg-surface border-t border-border p-4">
+		<div className="w-full bg-surface border-t border-border p-4 transport-bar">
 			<div className="flex flex-wrap items-center gap-4">
 				{/* Playback Controls */}
 				<div className="flex gap-2">
 					<Button
 						onClick={isPlaying ? pause : play}
 						variant="secondary"
-						size="sm"
-						className="min-w-[80px]"
+						className="min-w-[100px] h-11"
+						aria-label={isPlaying ? "Pause" : "Play"}
 					>
 						{isPlaying ? (
 							<>
-								<Pause className="w-4 h-4 mr-2" />
+								<Pause className="w-5 h-5 mr-2" />
 								PAUSE
 							</>
 						) : (
 							<>
-								<Play className="w-4 h-4 mr-2" />
+								<Play className="w-5 h-5 mr-2" />
 								PLAY
 							</>
 						)}
 					</Button>
-					<Button onClick={stop} variant="destructive" size="sm">
-						<Square className="w-4 h-4" />
+					<Button
+						onClick={stop}
+						variant="destructive"
+						className="size-11"
+						aria-label="Stop"
+					>
+						<Square className="w-5 h-5" />
 					</Button>
 				</div>
 
 				{/* Seek Bar */}
 				<div className="flex-1 min-w-[200px] flex items-center gap-2">
 					<Slider
+						aria-label="Seek"
 						value={[currentTime]}
 						max={songDuration}
 						step={0.1}
 						onValueChange={handleSeekChange}
-						className="flex-1"
+						className="flex-1 h-11"
 					/>
 					<span className="text-sm text-muted-foreground min-w-[80px] text-right">
 						{formatTime(currentTime)} / {formatTime(songDuration)}
@@ -108,12 +114,13 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 				<div className="flex items-center gap-2">
 					<Music className="w-4 h-4 text-muted-foreground" />
 					<Slider
+						aria-label="Speed"
 						value={[speed]}
 						min={0.25}
 						max={2}
 						step={0.25}
 						onValueChange={handleSpeedChange}
-						className="w-32"
+						className="w-32 h-11"
 					/>
 					<span className="text-sm min-w-[40px]">{speed.toFixed(2)}x</span>
 				</div>
@@ -122,12 +129,13 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 				<div className="flex items-center gap-2">
 					<Volume2 className="w-4 h-4 text-muted-foreground" />
 					<Slider
+						aria-label="Volume"
 						value={[volume]}
 						min={0}
 						max={1}
 						step={0.05}
 						onValueChange={handleVolumeChange}
-						className="w-32"
+						className="w-32 h-11"
 					/>
 				</div>
 

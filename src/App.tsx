@@ -3,6 +3,7 @@ import { FileUpload } from "./components/FileUpload";
 import { Visualizer } from "./components/Visualizer";
 import { Minimap } from "./components/Minimap";
 import { TransportBar } from "./components/TransportBar";
+import { Button } from "./components/ui/button";
 import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
@@ -72,23 +73,24 @@ function App() {
 								</div>
 							</div>
 
-							<button
-								type="button"
+							<Button
+								variant="ghost"
 								onClick={() => {
 									stop();
 									resetSpeed();
 									setSong(null);
 								}}
-								className="w-full py-1 text-sm text-muted-foreground hover:text-foreground transition-colors underline"
+								className="w-full h-11 text-muted-foreground hover:text-foreground underline decoration-1 underline-offset-4"
 							>
 								Upload Another Song
-							</button>
+							</Button>
 						</div>
 
 						{/* Minimap Navigation */}
 						<div className="w-full">
 							<Minimap
 								track={song.tracks[0]}
+								songDuration={song.durationSeconds}
 								onSeek={(time) => seek(time)}
 							/>
 						</div>

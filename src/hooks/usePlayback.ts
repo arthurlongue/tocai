@@ -34,7 +34,8 @@ export const usePlayback = () => {
 		engine.stopAll();
 	}, [engine]);
 
-	const seek = useCallback((seconds: number) => {
+	const seek = useCallback(async (seconds: number) => {
+		await Tone.start();
 		Tone.getTransport().seconds = seconds;
 	}, []);
 

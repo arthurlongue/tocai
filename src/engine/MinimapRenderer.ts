@@ -16,9 +16,9 @@ export class MinimapRenderer {
 		this.ctx = ctx;
 	}
 
-	setTrack(track: Track): void {
+	setTrack(track: Track, songDuration?: number): void {
 		this.track = track;
-		this.songDuration = this.calculateSongDuration(track);
+		this.songDuration = songDuration ?? this.calculateSongDuration(track);
 		this.draw();
 	}
 
@@ -31,18 +31,22 @@ export class MinimapRenderer {
 	}
 
 	draw(currentTime: number = 0): void {
-		if (!this.track) return;
+		if (!this.track || this.songDuration === 0) return;
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
 		const height = this.canvas.height / dpr;
 
-		// Clear canvas
+		// Reset transform and clear
+		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+		// Scale for HiDPI so we can use CSS pixels
+		this.ctx.scale(dpr, dpr);
 
 		// Draw background
 		this.ctx.fillStyle = "#0a0a0a";
-		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this.ctx.fillRect(0, 0, width, height);
 
 		// Calculate scaling
 		const pixelsPerSecond = width / this.songDuration;
@@ -63,24 +67,24 @@ export class MinimapRenderer {
 		for (const note of this.track.notes) {
 			const x = note.startTime * pixelsPerSecond;
 			const y = note.string * laneHeight;
-			const noteWidth = Math.max(
-				1,
-				note.duration * pixelsPerSecond,
-			);
+			const noteWidth = Math.max(1, note.duration * pixelsPerSecond);
 
 			this.ctx.fillStyle = STRING_COLORS[note.string] || "#fff";
 			this.ctx.fillRect(x, y, noteWidth, laneHeight);
 		}
 
 		// Draw current position playhead (clamped to canvas bounds)
-		const playheadX = Math.min(width, Math.max(0, currentTime * pixelsPerSecond));
+		const playheadX = Math.min(
+			width,
+			Math.max(0, currentTime * pixelsPerSecond),
+		);
 		this.ctx.strokeStyle = "#fff";
 		this.ctx.lineWidth = 2;
 		this.ctx.beginPath();
 		this.ctx.moveTo(playheadX, 0);
 		this.ctx.lineTo(playheadX, height);
 		this.ctx.stroke();
-		
+
 		// Draw song duration marker at end
 		this.ctx.fillStyle = "#666";
 		this.ctx.font = "10px sans-serif";

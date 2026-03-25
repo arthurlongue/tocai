@@ -89,9 +89,10 @@ export class Renderer {
 		const delay = latency + lookAhead + 0.05;
 
 		// Tone.Transport.seconds is the authoritative time source
-		// It already accounts for BPM changes (speed), so no additional multiplication needed
-		// At 0.25x BPM, Transport.seconds advances at 0.25x rate automatically
-		const transportTime = Tone.getTransport().seconds;
+		// It returns wall-clock time, so we must multiply by the current speed multiplier
+		// to match the audio engine's BPM-scaled tempo.
+		const rawTransportTime = Tone.getTransport().seconds;
+		const transportTime = rawTransportTime * this.speed;
 		
 		// Apply delay compensation for audio latency
 		// This pushes notes to the right so they hit the line when sound plays

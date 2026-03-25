@@ -2,23 +2,27 @@ import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioEngine } from "./AudioEngine";
 
-// Mock Tone.js
+// Mock Tone.js - use class syntax to ensure constructor works
+class MockSynth {
+	triggerAttackRelease = vi.fn();
+	toDestination = vi.fn().mockReturnThis();
+	dispose = vi.fn();
+	triggerRelease = vi.fn();
+}
+
 vi.mock("tone", () => {
 	return {
-		Frequency: vi.fn(() => ({
-			toFrequency: () => 440,
-		})),
-
+		Frequency: vi.fn(() => ({ toFrequency: () => 440 })),
 		getContext: vi.fn(() => ({
 			state: "suspended",
 		})),
 		start: vi.fn(),
-		Synth: vi.fn().mockImplementation(() => ({
-			triggerAttackRelease: vi.fn(),
-			toDestination: vi.fn().mockReturnThis(),
-			dispose: vi.fn(),
-			triggerRelease: vi.fn(),
-		})),
+		Synth: class MockSynth {
+			triggerAttackRelease = vi.fn();
+			toDestination = vi.fn().mockReturnThis();
+			dispose = vi.fn();
+			triggerRelease = vi.fn();
+		},
 		getDestination: vi.fn(),
 	};
 });

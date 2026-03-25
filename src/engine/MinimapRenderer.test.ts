@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { MinimapRenderer } from "./MinimapRenderer";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
+import { MinimapRenderer } from "./MinimapRenderer";
 
 // Mock canvas context
 const mockCtx = {
@@ -10,6 +10,9 @@ const mockCtx = {
 	moveTo: vi.fn(),
 	lineTo: vi.fn(),
 	stroke: vi.fn(),
+	setTransform: vi.fn(),
+	scale: vi.fn(),
+	fillText: vi.fn(),
 	set fillStyle(_val: string) {},
 	set strokeStyle(_val: string) {},
 	set lineWidth(_val: number) {},

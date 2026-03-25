@@ -75,7 +75,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 
 	return (
 		<div
-			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden"
+			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden visualizer"
 			style={{ height: "500px" }}
 		>
 			<canvas ref={canvasRef} className="w-full h-full block" />

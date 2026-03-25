@@ -8,6 +8,11 @@ test.describe("Minimap Component", () => {
 		await fileInput.setInputFiles("tests/fixtures/test-song.gp5");
 		// Wait for minimap to appear
 		await expect(page.locator("canvas.cursor-pointer")).toBeVisible();
+
+		// Resuming AudioContext requires user gesture
+		await page.getByRole("button", { name: /play/i }).click();
+		await page.waitForTimeout(500);
+		await page.getByRole("button", { name: /pause/i }).click();
 	});
 
 	test("should render minimap canvas", async ({ page }) => {
@@ -47,18 +52,19 @@ test.describe("Minimap Component", () => {
 		const timeDisplay = page.getByText(/\d:\d{2} \/ \d:\d{2}/);
 		const initialTime = await timeDisplay.textContent();
 
-		// Click at 25% of the canvas width
-		const clickX = box.x + box.width * 0.25;
-		const clickY = box.y + box.height / 2;
-
-		await page.mouse.click(clickX, clickY);
+		// Click at 25% of the canvas width using locator.click for reliability
+		await canvas.click({
+			position: {
+				x: box.width * 0.25,
+				y: box.height / 2,
+			},
+		});
 
 		// Wait for seek to process
-		await page.waitForTimeout(200);
+		await page.waitForTimeout(1500);
 
 		// Time should update
-		const newTime = await timeDisplay.textContent();
-		expect(newTime).not.toBe(initialTime);
+		await expect(timeDisplay).not.toHaveText(initialTime || "");
 	});
 
 	test("should seek to different positions based on click location", async ({
@@ -74,13 +80,23 @@ test.describe("Minimap Component", () => {
 		const timeDisplay = page.getByText(/\d:\d{2} \/ \d:\d{2}/);
 
 		// Click at 10% of canvas
-		await page.mouse.click(box.x + box.width * 0.1, box.y + box.height / 2);
-		await page.waitForTimeout(200);
+		await canvas.click({
+			position: {
+				x: box.width * 0.1,
+				y: box.height / 2,
+			},
+		});
+		await page.waitForTimeout(1000);
 		const time1 = await timeDisplay.textContent();
 
 		// Click at 90% of canvas
-		await page.mouse.click(box.x + box.width * 0.9, box.y + box.height / 2);
-		await page.waitForTimeout(200);
+		await canvas.click({
+			position: {
+				x: box.width * 0.9,
+				y: box.height / 2,
+			},
+		});
+		await page.waitForTimeout(1000);
 		const time2 = await timeDisplay.textContent();
 
 		// Time at 90% should be greater than time at 10%
@@ -98,7 +114,7 @@ test.describe("Minimap Component", () => {
 	});
 
 	test("should have proper container styling", async ({ page }) => {
-		const container = page.locator(".minimap-container, .w-full.bg-surface");
+		const container = page.locator(".minimap-container").first();
 		await expect(container).toBeVisible();
 
 		// Verify background color (surface)

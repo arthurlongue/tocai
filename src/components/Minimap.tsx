@@ -5,10 +5,15 @@ import { MinimapRenderer } from "../engine/MinimapRenderer";
 
 interface MinimapProps {
 	track: Track | undefined;
+	songDuration: number;
 	onSeek: (time: number) => void;
 }
 
-export const Minimap: React.FC<MinimapProps> = ({ track, onSeek }) => {
+export const Minimap: React.FC<MinimapProps> = ({
+	track,
+	songDuration,
+	onSeek,
+}) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<MinimapRenderer | null>(null);
 	const animationFrameRef = useRef<number | null>(null);
@@ -26,13 +31,14 @@ export const Minimap: React.FC<MinimapProps> = ({ track, onSeek }) => {
 		canvas.height = rect.height * dpr;
 
 		const renderer = new MinimapRenderer(canvas);
-		renderer.setTrack(track);
+		renderer.setTrack(track, songDuration);
 		rendererRef.current = renderer;
 
 		// Animation loop for playhead
 		const animate = () => {
 			if (rendererRef.current) {
-				rendererRef.current.draw(Tone.getTransport().seconds);
+				const seconds = Tone.getTransport().seconds;
+				rendererRef.current.draw(seconds);
 			}
 			animationFrameRef.current = requestAnimationFrame(animate);
 		};
@@ -45,10 +51,10 @@ export const Minimap: React.FC<MinimapProps> = ({ track, onSeek }) => {
 			// Clean up renderer reference
 			delete (canvas as any).__minimapRenderer;
 		};
-	}, [track]);
+	}, [track, songDuration]);
 
 	// Handle click to seek
-	const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+	const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
 		if (!rendererRef.current) return;
 
 		const rect = canvasRef.current!.getBoundingClientRect();
@@ -58,11 +64,11 @@ export const Minimap: React.FC<MinimapProps> = ({ track, onSeek }) => {
 	};
 
 	return (
-		<div className="w-full bg-surface border-b border-border">
+		<div className="w-full bg-surface border-b border-border minimap-container">
 			<canvas
 				ref={canvasRef}
 				className="w-full h-12 cursor-pointer"
-				onClick={handleClick}
+				onPointerDown={handlePointerDown}
 			/>
 		</div>
 	);

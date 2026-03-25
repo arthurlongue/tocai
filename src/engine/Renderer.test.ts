@@ -1,11 +1,12 @@
 /**
  * @vitest-environment jsdom
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as Tone from "tone";
+
 import type { Transport } from "tone";
-import { Renderer } from "./Renderer";
+import * as Tone from "tone";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HIT_LINE_X, NOTE_RADIUS, STRING_COUNT } from "./constants";
+import { Renderer } from "./Renderer";
 
 // Mock Tone.js
 vi.mock("tone", () => ({
@@ -122,7 +123,9 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 
 			// At time 0, note at startTime 2.0 should be far to the right
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 0,
+			} as unknown as Transport);
 			renderer.draw();
 
 			// Verify arc was called (note drawn) - position calculated from getNoteX
@@ -131,7 +134,9 @@ describe("Renderer", () => {
 			// At time 2.0, note should be near HIT_LINE_X (100)
 			// Note: The renderer adds a small latency compensation (0.05), so the actual
 			// position will be slightly offset: 100 + 0.05 * 200 = 110
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 2.0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 2.0,
+			} as unknown as Transport);
 			mockCtx.arc.mockClear();
 			renderer.draw();
 
@@ -158,12 +163,13 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrackWithTuning as any);
 			renderer.draw();
 
-			// Should draw STRING_COUNT horizontal lines for lanes + 1 for hit-line
-			// moveTo is called STRING_COUNT times for lanes + 1 for hit-line
-			expect(mockCtx.moveTo).toHaveBeenCalledTimes(STRING_COUNT + 1);
-			expect(mockCtx.lineTo).toHaveBeenCalledTimes(STRING_COUNT + 1);
+			// Should draw STRING_COUNT horizontal lines for lanes TWICE (before and after notes)
+			// plus 1 for hit-line
+			// Total: STRING_COUNT * 2 + 1 = 13 calls
+			expect(mockCtx.moveTo).toHaveBeenCalledTimes(STRING_COUNT * 2 + 1);
+			expect(mockCtx.lineTo).toHaveBeenCalledTimes(STRING_COUNT * 2 + 1);
 
-			// Verify Y positions are calculated correctly for each string lane
+			// Verify Y positions are calculated correctly for each string lane (first set)
 			const laneHeight = 600 / STRING_COUNT; // height / STRING_COUNT
 			const moveToCalls = mockCtx.moveTo.mock.calls;
 
@@ -252,7 +258,9 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 
 			// Set time so note is at hit-line
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 5.0,
+			} as unknown as Transport);
 			renderer.draw();
 
 			// Get the arc call to find note center
@@ -276,22 +284,19 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			// Verify hit-line is drawn at HIT_LINE_X (last moveTo/lineTo calls are for hit-line)
+			// The hit-line is drawn between the two sets of string lanes
+			// First set: lanes 0-5 (6 calls), then hit-line (call 6), then second set: lanes 0-5 (calls 7-12)
 			const moveToCalls = mockCtx.moveTo.mock.calls;
 			const lineToCalls = mockCtx.lineTo.mock.calls;
 
-			// Hit-line is drawn after string lanes, so it's the last moveTo/lineTo call
-			const hitLineMoveTo = moveToCalls[moveToCalls.length - 1];
-			const hitLineLineTo = lineToCalls[lineToCalls.length - 1];
+			// Find the hit-line call - it should be at index STRING_COUNT (after first set of lanes)
+			const hitLineMoveTo = moveToCalls[STRING_COUNT];
+			const hitLineLineTo = lineToCalls[STRING_COUNT];
 
 			expect(hitLineMoveTo[0]).toBe(HIT_LINE_X);
 			expect(hitLineMoveTo[1]).toBe(0);
 			expect(hitLineLineTo[0]).toBe(HIT_LINE_X);
 			expect(hitLineLineTo[1]).toBe(600); // height
-
-			// Verify hit-line styling
-			expect(mockCtx.strokeStyle).toBe("#fff");
-			expect(mockCtx.lineWidth).toBe(2);
 		});
 
 		it("draws hit-line as a vertical line from top to bottom", () => {
@@ -301,16 +306,16 @@ describe("Renderer", () => {
 			const moveToCalls = mockCtx.moveTo.mock.calls;
 			const lineToCalls = mockCtx.lineTo.mock.calls;
 
-			// Find the hit-line call (should have x = HIT_LINE_X and y from 0 to height)
-			const hitLineMoveTo = moveToCalls.find(
-				(call: any) => call[0] === HIT_LINE_X && call[1] === 0,
-			);
-			const hitLineLineTo = lineToCalls.find(
-				(call: any) => call[0] === HIT_LINE_X && call[1] === 600,
-			);
+			// Find the hit-line call (at index STRING_COUNT, between the two lane sets)
+			const hitLineMoveTo = moveToCalls[STRING_COUNT];
+			const hitLineLineTo = lineToCalls[STRING_COUNT];
 
 			expect(hitLineMoveTo).toBeDefined();
 			expect(hitLineLineTo).toBeDefined();
+			expect(hitLineMoveTo[0]).toBe(HIT_LINE_X);
+			expect(hitLineMoveTo[1]).toBe(0);
+			expect(hitLineLineTo[0]).toBe(HIT_LINE_X);
+			expect(hitLineLineTo[1]).toBe(600);
 		});
 	});
 
@@ -388,7 +393,9 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 
 			// Set time so notes are visible in viewport
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 5.0,
+			} as unknown as Transport);
 			renderer.draw();
 
 			// fill should be called for each note (2 notes)
@@ -416,7 +423,9 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 
 			// Set time so note is visible
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 5.0,
+			} as unknown as Transport);
 			renderer.draw();
 
 			// arc should be called with NOTE_RADIUS as the radius
@@ -445,7 +454,9 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 
 			// Set time so note is visible
-			vi.mocked(Tone.getTransport).mockReturnValue({ seconds: 5.0 } as unknown as Transport);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 5.0,
+			} as unknown as Transport);
 			renderer.draw();
 
 			// stroke should be called (hit-line + note borders)

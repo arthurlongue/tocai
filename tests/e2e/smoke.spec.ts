@@ -31,7 +31,7 @@ test.describe("Tocaí App - Core User Flow", () => {
 		await expect(uploadSection).toBeVisible();
 
 		// Verify upload label/instructions
-		await expect(page.getByText(/guitar pro/i)).toBeVisible();
+		await expect(page.getByRole("heading", { name: /guitar pro/i })).toBeVisible();
 	});
 
 	test("should show song info after upload", async ({ page }) => {
@@ -42,8 +42,8 @@ test.describe("Tocaí App - Core User Flow", () => {
 		await fileInput.setInputFiles("tests/fixtures/test-song.gp5");
 
 		// Wait for song to load and display
-		await expect(page.locator("h2")).toBeVisible();
-		await expect(page.locator(".text-muted-foreground")).toBeVisible();
+		await expect(page.locator("h2").first()).toBeVisible();
+		await expect(page.locator(".text-lg.text-muted-foreground")).toBeVisible();
 
 		// Verify song metadata section
 		await expect(page.getByText(/duration/i)).toBeVisible();
@@ -90,7 +90,7 @@ test.describe("Tocaí App - Core User Flow", () => {
 
 		// Wait for visualizer to appear
 		await expect(page.locator(".visualizer")).toBeVisible();
-		await expect(page.locator("canvas")).toBeVisible();
+		await expect(page.locator(".visualizer canvas")).toBeVisible();
 	});
 
 	test("should allow uploading another song", async ({ page }) => {
@@ -101,7 +101,7 @@ test.describe("Tocaí App - Core User Flow", () => {
 		await fileInput.setInputFiles("tests/fixtures/test-song.gp5");
 
 		// Wait for song to load
-		await expect(page.locator("h2")).toBeVisible();
+		await expect(page.locator("h2").first()).toBeVisible();
 
 		// Click "Upload Another Song"
 		await page.getByRole("button", { name: /upload another/i }).click();

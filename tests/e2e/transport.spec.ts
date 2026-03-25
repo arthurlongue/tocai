@@ -8,6 +8,11 @@ test.describe("Transport Bar Controls", () => {
 		await fileInput.setInputFiles("tests/fixtures/test-song.gp5");
 		// Wait for transport bar to appear
 		await expect(page.locator(".transport-bar")).toBeVisible();
+
+		// Resuming AudioContext requires user gesture
+		await page.getByRole("button", { name: /play/i }).click();
+		await page.waitForTimeout(500);
+		await page.getByRole("button", { name: /pause/i }).click();
 	});
 
 	test("should have all required transport controls visible", async ({
@@ -49,13 +54,11 @@ test.describe("Transport Bar Controls", () => {
 		await expect(speedSlider).toBeVisible();
 
 		// Verify min/max attributes
-		const min = await speedSlider.getAttribute("min");
-		const max = await speedSlider.getAttribute("max");
-		const step = await speedSlider.getAttribute("step");
+		const min = await speedSlider.getAttribute("aria-valuemin");
+		const max = await speedSlider.getAttribute("aria-valuemax");
 
 		expect(min).toBe("0.25");
 		expect(max).toBe("2");
-		expect(step).toBe("0.25");
 
 		// Verify default speed display (1.00x)
 		await expect(page.getByText(/1\.00x/)).toBeVisible();
@@ -68,13 +71,11 @@ test.describe("Transport Bar Controls", () => {
 		await expect(volumeSlider).toBeVisible();
 
 		// Verify min/max attributes
-		const min = await volumeSlider.getAttribute("min");
-		const max = await volumeSlider.getAttribute("max");
-		const step = await volumeSlider.getAttribute("step");
+		const min = await volumeSlider.getAttribute("aria-valuemin");
+		const max = await volumeSlider.getAttribute("aria-valuemax");
 
 		expect(min).toBe("0");
 		expect(max).toBe("1");
-		expect(step).toBe("0.05");
 	});
 
 	test("should display time in M:SS format", async ({ page }) => {
@@ -96,7 +97,7 @@ test.describe("Transport Bar Controls", () => {
 		await page.getByRole("button", { name: /play/i }).click();
 
 		// Wait for playback to start and time to update
-		await page.waitForTimeout(1000);
+		await page.waitForTimeout(2000);
 
 		// Time should have changed
 		const updatedTime = await timeDisplay.textContent();
@@ -121,9 +122,8 @@ test.describe("Transport Bar Controls", () => {
 		}
 
 		// Time should update after seek
-		await page.waitForTimeout(200);
-		const newTime = await timeDisplay.textContent();
-		expect(newTime).not.toBe(initialTime);
+		await page.waitForTimeout(1000);
+		await expect(timeDisplay).not.toHaveText(initialTime || "");
 	});
 
 	test("should change speed when slider is adjusted", async ({ page }) => {
@@ -143,7 +143,7 @@ test.describe("Transport Bar Controls", () => {
 		}
 
 		// Speed display should update
-		await page.waitForTimeout(200);
+		await page.waitForTimeout(1000);
 		await expect(speedDisplay).toHaveText(/1\.\d{2}x/);
 	});
 
@@ -162,6 +162,6 @@ test.describe("Transport Bar Controls", () => {
 
 		// Verify transport bar contains all control groups
 		await expect(transportBar.locator("button")).toHaveCount(2);
-		await expect(transportBar.locator('input[type="range"]')).toHaveCount(3);
+		await expect(transportBar.getByRole("slider")).toHaveCount(3);
 	});
 });

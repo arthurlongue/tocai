@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
-import { Minimap } from "./Minimap";
+import { fireEvent, render } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
+import { Minimap } from "./Minimap";
 
 // Mock Tone.js
 vi.mock("tone", () => ({
@@ -18,6 +18,9 @@ const mockCtx = {
 	moveTo: vi.fn(),
 	lineTo: vi.fn(),
 	stroke: vi.fn(),
+	setTransform: vi.fn(),
+	scale: vi.fn(),
+	fillText: vi.fn(),
 	set fillStyle(_val: string) {},
 	set strokeStyle(_val: string) {},
 	set lineWidth(_val: number) {},
@@ -62,7 +65,7 @@ describe("Minimap", () => {
 		);
 
 		const { container } = render(
-			<Minimap track={track} onSeek={mockOnSeek} />,
+			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
 
 		const canvas = container.querySelector("canvas");
@@ -76,7 +79,7 @@ describe("Minimap", () => {
 		);
 
 		const { container } = render(
-			<Minimap track={track} onSeek={mockOnSeek} />,
+			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
 
 		const canvas = container.querySelector("canvas");
@@ -90,7 +93,7 @@ describe("Minimap", () => {
 		);
 
 		const { container } = render(
-			<Minimap track={track} onSeek={mockOnSeek} />,
+			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
 
 		const canvas = container.querySelector("canvas");
@@ -109,9 +112,9 @@ describe("Minimap", () => {
 			toJSON: () => ({}),
 		} as DOMRect);
 
-		// Simulate click at middle of canvas (400px)
-		// This should seek to approximately 2.5 seconds (half of 5 second song)
-		fireEvent.click(canvas!, { clientX: 400 });
+		// Simulate pointer down at middle of canvas (400px)
+		// The component uses onPointerDown, not onClick
+		fireEvent.pointerDown(canvas!, { clientX: 400 });
 
 		expect(mockOnSeek).toHaveBeenCalledWith(expect.any(Number));
 	});
