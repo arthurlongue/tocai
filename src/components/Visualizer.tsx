@@ -1,18 +1,30 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
+import * as Tone from "tone";
 import type { Track } from "../domain/types";
 import { Renderer } from "../engine/Renderer";
+import { useTransportStatus } from "../hooks/useTransportStatus";
 
 interface VisualizerProps {
 	track?: Track;
 	speed?: number;
 }
 
-export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) => {
+export const Visualizer: React.FC<VisualizerProps> = ({
+	track,
+	speed = 1.0,
+}) => {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<Renderer | null>(null);
+	const transportStatus = useTransportStatus();
+	const transportStatusRef = useRef(transportStatus);
+	const getIdleCurrentTime = () => Tone.getTransport().seconds;
 
-	// Initialize Renderer
+	useEffect(() => {
+		transportStatusRef.current = transportStatus;
+	}, [transportStatus]);
+
+	// Initialize Renderer once and keep it alive for the component lifetime.
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -32,7 +44,13 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 				canvas.height = newHeight;
 				const ctx = canvas.getContext("2d");
 				if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-				if (rendererRef.current) rendererRef.current.draw();
+				if (rendererRef.current) {
+					if (transportStatusRef.current === "started") {
+						rendererRef.current.draw();
+					} else {
+						rendererRef.current.drawAt(getIdleCurrentTime());
+					}
+				}
 			}
 		};
 
@@ -41,11 +59,6 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 		const renderer = new Renderer(canvas);
 		rendererRef.current = renderer;
 		(canvas as any).__renderer = renderer;
-
-		if (track) renderer.setTrack(track);
-		if (speed !== undefined) renderer.setSpeed(speed);
-
-		renderer.start();
 
 		const observer = new ResizeObserver(resizeCanvas);
 		observer.observe(parent);
@@ -57,28 +70,39 @@ export const Visualizer: React.FC<VisualizerProps> = ({ track, speed = 1.0 }) =>
 			window.removeEventListener("resize", resizeCanvas);
 			delete (canvas as any).__renderer;
 		};
-	}, [track]);
+	}, []);
 
-	// Update track when it changes
+	// Keep renderer state aligned with the current track, speed, and transport mode.
 	useEffect(() => {
-		if (rendererRef.current && track) {
-			rendererRef.current.setTrack(track);
-		}
-	}, [track]);
+		const renderer = rendererRef.current;
+		if (!renderer) return;
 
-	// Update speed tracking
-	useEffect(() => {
-		if (rendererRef.current && speed !== undefined) {
-			rendererRef.current.setSpeed(speed);
+		if (track) {
+			renderer.setTrack(track);
 		}
-	}, [speed]);
+
+		renderer.setSpeed(speed);
+
+		if (transportStatus === "started") {
+			renderer.start();
+			renderer.draw();
+			return;
+		}
+
+		renderer.stop();
+		renderer.drawAt(getIdleCurrentTime());
+	}, [track, speed, transportStatus]);
 
 	return (
 		<div
 			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden visualizer"
 			style={{ height: "500px" }}
 		>
-			<canvas ref={canvasRef} className="w-full h-full block" />
+			<canvas
+				ref={canvasRef}
+				className="w-full h-full block"
+				data-testid="visualizer-canvas"
+			/>
 		</div>
 	);
 };
