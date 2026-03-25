@@ -5,6 +5,9 @@
 - 2026-03-25T17:28Z [USER] Requested a review and improvement of the color palette for high contrast, and decided the app will exclusively use dark mode.
 - 2026-03-25T18:08Z [USER] Requested fixes for the two review findings covering stopped-state visualizer seeks and Playwright server reuse in CI.
 - 2026-03-25T18:20Z [USER] Requested that the current uncommitted workspace changes be committed as-is.
+- 2026-03-25T18:28Z [USER] Requested regression coverage for playback-speed desync where canvas notes teleport and minimap/canvas drift apart.
+- 2026-03-25T19:09Z [USER] Reported that the prior renderer-only fix removed note teleporting but also froze visual speed changes, leaving canvas/minimap playback motion out of sync with the track speed.
+- 2026-03-25T19:12Z [USER] Requested that the playback-timeline synchronization fix be committed.
 
 ## [OUTCOMES]
 
@@ -24,6 +27,8 @@
 - 2026-03-25T18:05Z [TOOL] Fixed the post-review regressions by keeping `Visualizer` idle redraws aligned to `Tone.getTransport().seconds`, restoring `reuseExistingServer: !process.env.CI` in Playwright, and adding `src/components/Visualizer.test.tsx`. Verified with `pnpm test -- --run src/components/Visualizer.test.tsx src/components/Minimap.test.tsx`, `pnpm build`, and `pnpm test:e2e:smoke` (`10 passed`).
 - 2026-03-25T18:06Z [TOOL] Supersedes the prior 2026-03-25T18:05Z validation note for this turn: the verified checks are `pnpm test --run src/components/Visualizer.test.tsx src/components/Minimap.test.tsx` (`2 files, 4 tests`), `pnpm build`, `pnpm exec vitest run src/components/Visualizer.test.tsx`, and `pnpm exec playwright test --list` (`12 tests in 4 files`); `pnpm test:e2e:smoke` was not rerun in this turn.
 - 2026-03-25T18:20Z [TOOL] Prepared the workspace for handoff by recording the user’s commit request in continuity; commit creation is the next step and test execution remains UNCONFIRMED for any edits not already covered above.
+- 2026-03-25T18:28Z [TOOL] Added a renderer regression test proving that a speed change at a fixed `Tone.Transport.seconds` must not move notes, then updated `src/engine/Renderer.ts` to keep `Tone.Transport.seconds` as the visual single source of truth. Verified with `pnpm exec vitest run src/engine/Renderer.test.ts`, `pnpm exec vitest run src/components/Visualizer.test.tsx src/components/Minimap.test.tsx`, `pnpm build`, and `pnpm test -- --run` (`11 files, 58 tests`).
+- 2026-03-25T19:09Z [TOOL] Replaced the renderer-only speed fix with a shared playback timeline mapper in `src/engine/playbackTimeline.ts`, then wired `Renderer`, `Visualizer`, `Minimap`, `TransportBar`, `usePlayback`, and `useSpeedControl` to read/write continuous song time across speed changes and seeks. Verified with focused Vitest coverage (`6 files, 36 tests`), `pnpm test -- --run` (`12 files, 62 tests`), and `pnpm build`.
 
 ## [PROGRESS]
 
@@ -46,3 +51,7 @@
 - 2026-03-25T18:10Z [TOOL] The trimmed Chromium suite now uses 3 workers from the top-level Playwright config constant and keeps only two always-on screenshot anchors (`mobile-layout-320px.png`, `desktop-layout-1280px.png`).
 - 2026-03-25T18:11Z [CODE] `useTransportStatus()` now has to tolerate mocked `Tone.getTransport()` objects without `on/off` methods because `src/components/Minimap.test.tsx` stubs transport with only `seconds`; guarding those listeners restored the unit suite without changing runtime behavior.
 - 2026-03-25T18:06Z [CODE] The stopped-state seek regression in `src/components/Visualizer.tsx` was triggered by later redraws using a synthetic idle `0` instead of `Tone.Transport.seconds`; a rerender after seek reproduced it even without playback because `usePlayback.seek()` only updates the transport clock and draws once.
+- 2026-03-25T18:28Z [CODE] `src/engine/Renderer.ts` multiplied `Tone.getTransport().seconds` by the UI speed multiplier before projecting note X positions, while `MinimapRenderer` consumed raw transport seconds. Evidence: the new regression test reproduced a fixed-position note shifting from `x=535` to `x=735` after changing speed from `1` to `0.5` at the same transport second.
+- 2026-03-25T19:09Z [CODE] Removing speed scaling from `Renderer` alone fixed the teleport but froze visual motion at a constant 1x rate because `Tone.Transport.seconds` behaves like a raw transport clock in this app path. Evidence: the user reported note stability but no visible speed change, and the replacement tests now require both boundary stability and slower post-change motion (`Renderer.test.ts`: same-position delta `<= 5px`, one-second post-change movement `105px` at `0.5x`).
+- 2026-03-25T19:09Z [CODE] `Visualizer` idle redraws and resize redraws also had to stop reading raw `Tone.Transport.seconds` once `Renderer.drawAt()` was changed to accept mapped song time; otherwise pausing at non-1x would redraw the canvas at the wrong position on rerender/resize. Evidence: `Visualizer.test.tsx` now asserts a raw transport value of `24.25` can map to a drawn song-time value of `18.5`.
+- 2026-03-25T19:09Z [TOOL] `gitnexus_detect_changes({scope:\"all\"})` reported `risk_level: high` because the patch touches `usePlayback`, `Renderer`, `Minimap`, `TransportBar`, and `useSpeedControl`, but the affected execution flows stayed inside the expected playback/render synchronization surface.

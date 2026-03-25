@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioEngine } from "../engine/AudioEngine";
+import { setPlaybackTimelineSpeed } from "../engine/playbackTimeline";
 import { useSpeedControl } from "./useSpeedControl";
 
 // Mock AudioEngine
@@ -8,6 +9,10 @@ vi.mock("../engine/AudioEngine", () => ({
 	AudioEngine: {
 		getInstance: vi.fn(),
 	},
+}));
+
+vi.mock("../engine/playbackTimeline", () => ({
+	setPlaybackTimelineSpeed: vi.fn(),
 }));
 
 // Mock Tone.js
@@ -30,6 +35,7 @@ describe("useSpeedControl", () => {
 		mockEngine = {
 			setSpeed: vi.fn(),
 		};
+		vi.mocked(setPlaybackTimelineSpeed).mockClear();
 		vi.mocked(AudioEngine.getInstance).mockReturnValue(
 			mockEngine as unknown as AudioEngine,
 		);
@@ -49,6 +55,7 @@ describe("useSpeedControl", () => {
 
 		expect(result.current.speed).toBe(1.5);
 		expect(mockEngine.setSpeed).toHaveBeenCalledWith(1.5);
+		expect(setPlaybackTimelineSpeed).toHaveBeenCalledWith(1.5);
 	});
 
 	it("setSpeed clamps to 0.25 minimum", () => {
@@ -60,6 +67,7 @@ describe("useSpeedControl", () => {
 
 		expect(result.current.speed).toBe(0.25);
 		expect(mockEngine.setSpeed).toHaveBeenCalledWith(0.25);
+		expect(setPlaybackTimelineSpeed).toHaveBeenCalledWith(0.25);
 	});
 
 	it("setSpeed clamps to 2.0 maximum", () => {
@@ -71,6 +79,7 @@ describe("useSpeedControl", () => {
 
 		expect(result.current.speed).toBe(2);
 		expect(mockEngine.setSpeed).toHaveBeenCalledWith(2);
+		expect(setPlaybackTimelineSpeed).toHaveBeenCalledWith(2);
 	});
 
 	it("resetSpeed returns to 1.0", () => {
@@ -83,5 +92,6 @@ describe("useSpeedControl", () => {
 
 		expect(result.current.speed).toBe(1);
 		expect(mockEngine.setSpeed).toHaveBeenCalledWith(1);
+		expect(setPlaybackTimelineSpeed).toHaveBeenCalledWith(1);
 	});
 });

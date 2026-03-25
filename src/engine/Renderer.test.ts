@@ -6,6 +6,10 @@ import type { Transport } from "tone";
 import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HIT_LINE_X, NOTE_RADIUS, STRING_COUNT } from "./constants";
+import {
+	resetPlaybackTimelineState,
+	setPlaybackTimelineSpeed,
+} from "./playbackTimeline";
 import { Renderer } from "./Renderer";
 
 // Mock Tone.js
@@ -27,6 +31,16 @@ describe("Renderer", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		resetPlaybackTimelineState();
+		vi.mocked(Tone.getTransport).mockReturnValue({
+			seconds: 0,
+		} as unknown as Transport);
+		vi.mocked(Tone.getContext).mockReturnValue({
+			rawContext: {
+				outputLatency: 0,
+			},
+			lookAhead: 0,
+		});
 
 		// Basic canvas mock
 		canvas = document.createElement("canvas");
@@ -360,6 +374,88 @@ describe("Renderer", () => {
 
 			// After draw is called, another RAF should be scheduled if loop continues
 			// (This is tested indirectly through the draw method)
+		});
+
+		it("keeps note positions stable when speed changes at the same transport time", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 4.0,
+						duration: 1,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 2.0,
+			} as unknown as Transport);
+
+			setPlaybackTimelineSpeed(1, 2.0);
+			renderer.setSpeed(1);
+			renderer.draw();
+			const baselineX = mockCtx.arc.mock.calls[0]?.[0] as number;
+
+			mockCtx.arc.mockClear();
+
+			setPlaybackTimelineSpeed(0.5, 2.0);
+			renderer.setSpeed(0.5);
+			renderer.draw();
+			const slowedX = mockCtx.arc.mock.calls[0]?.[0] as number;
+
+			expect(baselineX).toBeDefined();
+			expect(slowedX).toBeDefined();
+			expect(Math.abs(slowedX - baselineX)).toBeLessThanOrEqual(5);
+		});
+
+		it("advances notes at the new rate after a speed change", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 4.0,
+						duration: 1,
+						string: 0,
+						fret: 5,
+						techniques: {},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 2.0,
+			} as unknown as Transport);
+			setPlaybackTimelineSpeed(1, 2.0);
+			renderer.draw();
+			const baselineX = mockCtx.arc.mock.calls[0]?.[0] as number;
+
+			mockCtx.arc.mockClear();
+
+			setPlaybackTimelineSpeed(0.5, 2.0);
+			vi.mocked(Tone.getTransport).mockReturnValue({
+				seconds: 3.0,
+			} as unknown as Transport);
+			renderer.draw();
+			const slowedLaterX = mockCtx.arc.mock.calls[0]?.[0] as number;
+
+			expect(baselineX).toBeDefined();
+			expect(slowedLaterX).toBeDefined();
+			expect(baselineX - slowedLaterX).toBeCloseTo(105, 5);
 		});
 	});
 

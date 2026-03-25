@@ -2,6 +2,10 @@ import { useCallback } from "react";
 import * as Tone from "tone";
 import { AudioEngine } from "../engine/AudioEngine";
 import type { MinimapRenderer } from "../engine/MinimapRenderer";
+import {
+	getPlaybackTimelineTime,
+	syncPlaybackTimeline,
+} from "../engine/playbackTimeline";
 import type { Renderer } from "../engine/Renderer";
 
 const syncVisualState = (seconds: number) => {
@@ -28,23 +32,25 @@ export const usePlayback = () => {
 		// It is a no-op if the context is already started.
 		await Tone.start();
 		Tone.getTransport().start();
-		syncVisualState(Tone.getTransport().seconds);
+		syncVisualState(getPlaybackTimelineTime());
 	}, []);
 
 	const pause = useCallback(() => {
 		Tone.getTransport().pause();
-		syncVisualState(Tone.getTransport().seconds);
+		syncVisualState(getPlaybackTimelineTime());
 	}, []);
 
 	const stop = useCallback(() => {
 		// stopAll also calls Tone.getTransport().stop()
 		engine.stopAll();
+		syncPlaybackTimeline(0, Tone.getTransport().seconds);
 		syncVisualState(0);
 	}, [engine]);
 
 	const seek = useCallback(async (seconds: number) => {
 		await Tone.start();
 		Tone.getTransport().seconds = seconds;
+		syncPlaybackTimeline(seconds, Tone.getTransport().seconds);
 		syncVisualState(seconds);
 	}, []);
 

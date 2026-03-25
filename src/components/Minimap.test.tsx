@@ -3,28 +3,35 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
 import { Minimap } from "./Minimap";
 
-// Mock Tone.js
+let timelineTime = 0;
+
+const mockMinimapRenderer = {
+	setTrack: vi.fn(),
+	draw: vi.fn(),
+	getTimeFromX: vi.fn(() => 2.5),
+};
+
 vi.mock("tone", () => ({
 	getTransport: () => ({
 		seconds: 0,
 	}),
 }));
 
-// Mock canvas context
-const mockCtx = {
-	clearRect: vi.fn(),
-	fillRect: vi.fn(),
-	beginPath: vi.fn(),
-	moveTo: vi.fn(),
-	lineTo: vi.fn(),
-	stroke: vi.fn(),
-	setTransform: vi.fn(),
-	scale: vi.fn(),
-	fillText: vi.fn(),
-	set fillStyle(_val: string) {},
-	set strokeStyle(_val: string) {},
-	set lineWidth(_val: number) {},
-};
+vi.mock("../hooks/useTransportStatus", () => ({
+	useTransportStatus: () => "stopped",
+}));
+
+vi.mock("../engine/playbackTimeline", () => ({
+	getPlaybackTimelineTime: vi.fn(() => timelineTime),
+}));
+
+vi.mock("../engine/MinimapRenderer", () => ({
+	MinimapRenderer: class MockMinimapRenderer {
+		constructor() {
+			return mockMinimapRenderer;
+		}
+	},
+}));
 
 const createMockTrack = (): Track => ({
 	id: "test-track",
@@ -54,16 +61,14 @@ describe("Minimap", () => {
 	const mockOnSeek = vi.fn();
 
 	beforeEach(() => {
+		timelineTime = 0;
 		vi.clearAllMocks();
 		mockOnSeek.mockClear();
+		mockMinimapRenderer.getTimeFromX.mockReturnValue(2.5);
 	});
 
 	it("renders canvas element", () => {
 		const track = createMockTrack();
-		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-			mockCtx as any,
-		);
-
 		const { container } = render(
 			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
@@ -74,10 +79,6 @@ describe("Minimap", () => {
 
 	it("canvas has correct height (48px)", () => {
 		const track = createMockTrack();
-		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-			mockCtx as any,
-		);
-
 		const { container } = render(
 			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
@@ -86,12 +87,18 @@ describe("Minimap", () => {
 		expect(canvas?.classList.contains("h-12")).toBe(true);
 	});
 
+	it("draws idle frames from the shared playback timeline", () => {
+		timelineTime = 18.5;
+		const track = createMockTrack();
+
+		render(<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />);
+
+		expect(mockMinimapRenderer.setTrack).toHaveBeenCalledWith(track, 5);
+		expect(mockMinimapRenderer.draw).toHaveBeenCalledWith(18.5);
+	});
+
 	it("click on canvas calls onSeek callback", () => {
 		const track = createMockTrack();
-		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
-			mockCtx as any,
-		);
-
 		const { container } = render(
 			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
 		);
@@ -99,7 +106,6 @@ describe("Minimap", () => {
 		const canvas = container.querySelector("canvas");
 		expect(canvas).not.toBeNull();
 
-		// Mock getBoundingClientRect for the canvas
 		vi.spyOn(canvas!, "getBoundingClientRect").mockReturnValue({
 			left: 0,
 			top: 0,
@@ -112,10 +118,9 @@ describe("Minimap", () => {
 			toJSON: () => ({}),
 		} as DOMRect);
 
-		// Simulate pointer down at middle of canvas (400px)
-		// The component uses onPointerDown, not onClick
 		fireEvent.pointerDown(canvas!, { clientX: 400 });
 
-		expect(mockOnSeek).toHaveBeenCalledWith(expect.any(Number));
+		expect(mockMinimapRenderer.draw).toHaveBeenCalledWith(2.5);
+		expect(mockOnSeek).toHaveBeenCalledWith(2.5);
 	});
 });

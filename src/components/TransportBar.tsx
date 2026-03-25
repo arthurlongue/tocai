@@ -2,6 +2,7 @@ import { Music, Pause, Play, Square, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import * as Tone from "tone";
 import type { Track } from "../domain/types";
+import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { usePlayback } from "../hooks/usePlayback";
 import { useSpeedControl } from "../hooks/useSpeedControl";
 import { useTransportStatus } from "../hooks/useTransportStatus";
@@ -28,7 +29,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	// Poll current time from Tone.Transport
 	useEffect(() => {
 		const interval = setInterval(() => {
-			setCurrentTime(Tone.getTransport().seconds);
+			setCurrentTime(getPlaybackTimelineTime());
 		}, 100);
 		return () => clearInterval(interval);
 	}, []);

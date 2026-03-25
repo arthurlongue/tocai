@@ -41,6 +41,10 @@ vi.mock("../hooks/useSpeedControl", () => ({
 	}),
 }));
 
+vi.mock("../engine/playbackTimeline", () => ({
+	getPlaybackTimelineTime: vi.fn(() => 0),
+}));
+
 // Mock Tone.js
 vi.mock("tone", async () => {
 	const actual = await vi.importActual("tone");

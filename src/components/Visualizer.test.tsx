@@ -1,8 +1,10 @@
 import { render } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { Visualizer } from "./Visualizer";
 
 let transportSeconds = 0;
+let timelineSeconds = 0;
 
 const mockRenderer = {
 	setTrack: vi.fn(),
@@ -17,6 +19,10 @@ vi.mock("tone", () => ({
 	getTransport: vi.fn(() => ({
 		seconds: transportSeconds,
 	})),
+}));
+
+vi.mock("../engine/playbackTimeline", () => ({
+	getPlaybackTimelineTime: vi.fn(() => timelineSeconds),
 }));
 
 vi.mock("../hooks/useTransportStatus", () => ({
@@ -42,11 +48,13 @@ describe("Visualizer", () => {
 
 	beforeEach(() => {
 		transportSeconds = 0;
+		timelineSeconds = 0;
 		vi.clearAllMocks();
 	});
 
 	it("keeps the sought transport position when rerendering while stopped", () => {
 		transportSeconds = 12.5;
+		timelineSeconds = 12.5;
 		const { rerender } = render(<Visualizer speed={1} />);
 
 		expect(mockRenderer.setSpeed).toHaveBeenCalledWith(1);
@@ -54,9 +62,11 @@ describe("Visualizer", () => {
 		expect(mockRenderer.drawAt).toHaveBeenCalledWith(12.5);
 
 		transportSeconds = 24.25;
+		timelineSeconds = 18.5;
 		rerender(<Visualizer speed={0.75} />);
 
 		expect(mockRenderer.setSpeed).toHaveBeenLastCalledWith(0.75);
-		expect(mockRenderer.drawAt).toHaveBeenLastCalledWith(24.25);
+		expect(getPlaybackTimelineTime).toHaveBeenLastCalledWith(24.25);
+		expect(mockRenderer.drawAt).toHaveBeenLastCalledWith(18.5);
 	});
 });

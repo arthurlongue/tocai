@@ -7,6 +7,7 @@ import {
 	STRING_COUNT,
 } from "./constants";
 import { calculateVisibleNotes, getNoteX, getNoteY } from "./layout";
+import { getPlaybackTimelineTime } from "./playbackTimeline";
 
 export class Renderer {
 	private canvas: HTMLCanvasElement;
@@ -30,8 +31,8 @@ export class Renderer {
 
 	/**
 	 * Set playback speed multiplier for visual synchronization
-	 * Note: Audio speed is handled by Tone.Transport.bpm in AudioEngine
-	 * This method just tracks the speed value for potential future use
+	 * The visual timeline is derived from the raw transport clock through
+	 * playbackTimeline.ts. We retain this value for API compatibility.
 	 * @param speed - Speed multiplier (0.25 to 2.0)
 	 */
 	setSpeed(speed: number): void {
@@ -88,21 +89,15 @@ export class Renderer {
 		// Added a small baseline constant (0.05) to tune it perfectly.
 		const delay = latency + lookAhead + 0.05;
 
-		// Tone.Transport.seconds is the authoritative time source
-		// It returns wall-clock time, so we must multiply by the current speed multiplier
-		// to match the audio engine's BPM-scaled tempo.
 		const rawTransportTime = Tone.getTransport().seconds;
-		this.renderFrame(rawTransportTime, delay);
+		this.renderFrame(getPlaybackTimelineTime(rawTransportTime - delay));
 	}
 
-	drawAt(rawTransportTime: number): void {
-		this.renderFrame(rawTransportTime, 0);
+	drawAt(currentTime: number): void {
+		this.renderFrame(currentTime);
 	}
 
-	private renderFrame(rawTransportTime: number, delay: number): void {
-		const transportTime = rawTransportTime * this.speed;
-		const currentTime = Math.max(0, transportTime - delay);
-
+	private renderFrame(currentTime: number): void {
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
 		const height = this.canvas.height / dpr;

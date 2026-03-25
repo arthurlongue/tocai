@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AudioEngine } from "../engine/AudioEngine";
+import { setPlaybackTimelineSpeed } from "../engine/playbackTimeline";
 
 // Shared ref across all hook instances - stores current speed
 const speedRef = { current: 1.0 };
@@ -36,6 +37,7 @@ export const useSpeedControl = () => {
 			// Clamp to valid range (0.25 to 2.0)
 			const clamped = Math.max(0.25, Math.min(2.0, multiplier));
 			speedRef.current = clamped;
+			setPlaybackTimelineSpeed(clamped);
 			engine.setSpeed(clamped);
 			// Force all components to re-render
 			forceUpdateCallbacks.forEach((cb) => cb());
@@ -45,6 +47,7 @@ export const useSpeedControl = () => {
 
 	const resetSpeed = useCallback(() => {
 		speedRef.current = 1;
+		setPlaybackTimelineSpeed(1);
 		engine.setSpeed(1);
 		forceUpdateCallbacks.forEach((cb) => cb());
 	}, [engine]);

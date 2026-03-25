@@ -2,6 +2,7 @@ import type React from "react";
 import { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import type { Track } from "../domain/types";
+import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { Renderer } from "../engine/Renderer";
 import { useTransportStatus } from "../hooks/useTransportStatus";
 
@@ -18,7 +19,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 	const rendererRef = useRef<Renderer | null>(null);
 	const transportStatus = useTransportStatus();
 	const transportStatusRef = useRef(transportStatus);
-	const getIdleCurrentTime = () => Tone.getTransport().seconds;
+	const getIdleCurrentTime = () => getPlaybackTimelineTime(Tone.getTransport().seconds);
 
 	useEffect(() => {
 		transportStatusRef.current = transportStatus;

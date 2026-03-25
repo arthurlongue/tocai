@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import * as Tone from "tone";
 import type { Track } from "../domain/types";
 import { MinimapRenderer } from "../engine/MinimapRenderer";
+import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { useTransportStatus } from "../hooks/useTransportStatus";
 
 interface MinimapProps {
@@ -52,18 +52,14 @@ export const Minimap: React.FC<MinimapProps> = ({
 		const drawIdleFrame = () => {
 			if (!rendererRef.current) return;
 
-			const currentTime =
-				transportStatusRef.current === "paused"
-					? Tone.getTransport().seconds
-					: 0;
-			rendererRef.current.draw(currentTime);
+			rendererRef.current.draw(getPlaybackTimelineTime());
 		};
 
 		const startAnimation = () => {
 			stopAnimation();
 			const animate = () => {
 				if (rendererRef.current) {
-					rendererRef.current.draw(Tone.getTransport().seconds);
+					rendererRef.current.draw(getPlaybackTimelineTime());
 				}
 				animationFrameRef.current = requestAnimationFrame(animate);
 			};
@@ -83,7 +79,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 			if (!rendererRef.current) return;
 
 			if (transportStatusRef.current === "started") {
-				rendererRef.current.draw(Tone.getTransport().seconds);
+				rendererRef.current.draw(getPlaybackTimelineTime());
 				return;
 			}
 
@@ -115,7 +111,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 			stopAnimation();
 			const animate = () => {
 				if (rendererRef.current) {
-					rendererRef.current.draw(Tone.getTransport().seconds);
+					rendererRef.current.draw(getPlaybackTimelineTime());
 				}
 				animationFrameRef.current = requestAnimationFrame(animate);
 			};
@@ -126,9 +122,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 		}
 
 		stopAnimation();
-		const currentTime =
-			transportStatus === "paused" ? Tone.getTransport().seconds : 0;
-		renderer.draw(currentTime);
+		renderer.draw(getPlaybackTimelineTime());
 	}, [transportStatus]);
 
 	// Handle click to seek
