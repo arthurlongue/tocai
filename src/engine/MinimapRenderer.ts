@@ -92,7 +92,7 @@ export class MinimapRenderer {
 		const durationText = this.formatDuration(this.songDuration);
 		this.ctx.fillText(durationText, width - 2, height - 2);
 	}
-	
+
 	private formatDuration(seconds: number): string {
 		const mins = Math.floor(seconds / 60);
 		const secs = Math.floor(seconds % 60);

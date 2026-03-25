@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useSpeedControl } from "./useSpeedControl";
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioEngine } from "../engine/AudioEngine";
+import { useSpeedControl } from "./useSpeedControl";
 
 // Mock AudioEngine
 vi.mock("../engine/AudioEngine", () => ({

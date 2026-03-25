@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { FileUpload } from "./components/FileUpload";
-import { Visualizer } from "./components/Visualizer";
 import { Minimap } from "./components/Minimap";
 import { TransportBar } from "./components/TransportBar";
 import { Button } from "./components/ui/button";
+import { Visualizer } from "./components/Visualizer";
 import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
 import { useSpeedControl } from "./hooks/useSpeedControl";
-import "./App.css";
 
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
@@ -37,12 +36,12 @@ function App() {
 
 	return (
 		<>
-			<section id="center">
-				<div className="hero">
-					<h1 className="text-4xl font-bold tracking-tight text-primary mb-2">
+			<section className="flex flex-col gap-6 grow w-full justify-center items-stretch lg:p-0 max-lg:px-5 max-lg:py-6">
+				<div className="relative">
+					<h1 className="text-4xl lg:text-6xl font-bold tracking-tighter text-foreground mb-5 lg:mb-8 mt-5 lg:mt-8">
 						Tocaí
 					</h1>
-					<p className="text-muted-foreground mb-8">
+					<p className="text-muted-foreground text-lg mb-8">
 						Your web-based Guitar Pro player
 					</p>
 				</div>
@@ -113,27 +112,7 @@ function App() {
 				)}
 			</section>
 
-			<div className="ticks"></div>
-
-			<section id="next-steps">
-				<div id="docs">
-					<h2>About Tocaí</h2>
-					<p>
-						Phase 2: Audio Engine complete. Synthesized playback is now
-						synchronized with Tone.js transport.
-					</p>
-				</div>
-				<div id="social">
-					<h2>What's Next?</h2>
-					<p>
-						Phase 3 will introduce the Canvas Visualizer, bringing the notes to
-						life as they scroll across the screen.
-					</p>
-				</div>
-			</section>
-
-			<div className="ticks"></div>
-			<section id="spacer"></section>
+			<div className="relative w-full before:content-[''] before:absolute before:-top-[4.5px] before:left-0 before:border-[5px] before:border-transparent before:border-l-border after:content-[''] after:absolute after:-top-[4.5px] after:right-0 after:border-[5px] after:border-transparent after:border-r-border"></div>
 		</>
 	);
 }

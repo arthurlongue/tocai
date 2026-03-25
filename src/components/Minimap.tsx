@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as Tone from "tone";
 import type { Track } from "../domain/types";
 import { MinimapRenderer } from "../engine/MinimapRenderer";
+import { useTransportStatus } from "../hooks/useTransportStatus";
 
 interface MinimapProps {
 	track: Track | undefined;
@@ -17,6 +18,19 @@ export const Minimap: React.FC<MinimapProps> = ({
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const rendererRef = useRef<MinimapRenderer | null>(null);
 	const animationFrameRef = useRef<number | null>(null);
+	const transportStatus = useTransportStatus();
+	const transportStatusRef = useRef(transportStatus);
+
+	useEffect(() => {
+		transportStatusRef.current = transportStatus;
+	}, [transportStatus]);
+
+	const stopAnimation = () => {
+		if (animationFrameRef.current !== null) {
+			cancelAnimationFrame(animationFrameRef.current);
+			animationFrameRef.current = null;
+		}
+	};
 
 	// Initialize renderer
 	useEffect(() => {
@@ -33,33 +47,98 @@ export const Minimap: React.FC<MinimapProps> = ({
 		const renderer = new MinimapRenderer(canvas);
 		renderer.setTrack(track, songDuration);
 		rendererRef.current = renderer;
+		(canvas as HTMLCanvasElement & { __minimapRenderer?: MinimapRenderer }).__minimapRenderer = renderer;
 
-		// Animation loop for playhead
-		const animate = () => {
-			if (rendererRef.current) {
-				const seconds = Tone.getTransport().seconds;
-				rendererRef.current.draw(seconds);
-			}
-			animationFrameRef.current = requestAnimationFrame(animate);
+		const drawIdleFrame = () => {
+			if (!rendererRef.current) return;
+
+			const currentTime =
+				transportStatusRef.current === "paused"
+					? Tone.getTransport().seconds
+					: 0;
+			rendererRef.current.draw(currentTime);
 		};
-		animate();
+
+		const startAnimation = () => {
+			stopAnimation();
+			const animate = () => {
+				if (rendererRef.current) {
+					rendererRef.current.draw(Tone.getTransport().seconds);
+				}
+				animationFrameRef.current = requestAnimationFrame(animate);
+			};
+			animate();
+		};
+
+		const resizeCanvas = () => {
+			const nextRect = canvas.getBoundingClientRect();
+			const nextWidth = nextRect.width * dpr;
+			const nextHeight = nextRect.height * dpr;
+
+			if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+				canvas.width = nextWidth;
+				canvas.height = nextHeight;
+			}
+
+			if (!rendererRef.current) return;
+
+			if (transportStatusRef.current === "started") {
+				rendererRef.current.draw(Tone.getTransport().seconds);
+				return;
+			}
+
+			drawIdleFrame();
+		};
+
+		resizeCanvas();
+		if (transportStatusRef.current === "started") {
+			startAnimation();
+		} else {
+			drawIdleFrame();
+		}
+		window.addEventListener("resize", resizeCanvas);
 
 		return () => {
-			if (animationFrameRef.current !== null) {
-				cancelAnimationFrame(animationFrameRef.current);
-			}
-			// Clean up renderer reference
-			delete (canvas as any).__minimapRenderer;
+			stopAnimation();
+			window.removeEventListener("resize", resizeCanvas);
+			delete (
+				canvas as HTMLCanvasElement & { __minimapRenderer?: MinimapRenderer }
+			).__minimapRenderer;
 		};
 	}, [track, songDuration]);
 
+	useEffect(() => {
+		const renderer = rendererRef.current;
+		if (!renderer) return;
+
+		if (transportStatus === "started") {
+			stopAnimation();
+			const animate = () => {
+				if (rendererRef.current) {
+					rendererRef.current.draw(Tone.getTransport().seconds);
+				}
+				animationFrameRef.current = requestAnimationFrame(animate);
+			};
+			animate();
+			return () => {
+				stopAnimation();
+			};
+		}
+
+		stopAnimation();
+		const currentTime =
+			transportStatus === "paused" ? Tone.getTransport().seconds : 0;
+		renderer.draw(currentTime);
+	}, [transportStatus]);
+
 	// Handle click to seek
 	const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-		if (!rendererRef.current) return;
+		if (!rendererRef.current || !canvasRef.current) return;
 
-		const rect = canvasRef.current!.getBoundingClientRect();
+		const rect = canvasRef.current.getBoundingClientRect();
 		const x = e.clientX - rect.left;
 		const time = rendererRef.current.getTimeFromX(x);
+		rendererRef.current.draw(time);
 		onSeek(time);
 	};
 
@@ -68,6 +147,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 			<canvas
 				ref={canvasRef}
 				className="w-full h-12 cursor-pointer"
+				data-testid="minimap-canvas"
 				onPointerDown={handlePointerDown}
 			/>
 		</div>

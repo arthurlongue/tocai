@@ -92,10 +92,15 @@ export class Renderer {
 		// It returns wall-clock time, so we must multiply by the current speed multiplier
 		// to match the audio engine's BPM-scaled tempo.
 		const rawTransportTime = Tone.getTransport().seconds;
+		this.renderFrame(rawTransportTime, delay);
+	}
+
+	drawAt(rawTransportTime: number): void {
+		this.renderFrame(rawTransportTime, 0);
+	}
+
+	private renderFrame(rawTransportTime: number, delay: number): void {
 		const transportTime = rawTransportTime * this.speed;
-		
-		// Apply delay compensation for audio latency
-		// This pushes notes to the right so they hit the line when sound plays
 		const currentTime = Math.max(0, transportTime - delay);
 
 		const dpr = window.devicePixelRatio || 1;
@@ -103,10 +108,8 @@ export class Renderer {
 		const height = this.canvas.height / dpr;
 		const laneHeight = height / STRING_COUNT;
 
-		// Clear
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		// Draw string lanes (horizontal lines)
 		this.ctx.strokeStyle = "#333";
 		this.ctx.lineWidth = 1;
 		for (let i = 0; i < STRING_COUNT; i++) {
@@ -117,7 +120,6 @@ export class Renderer {
 			this.ctx.stroke();
 		}
 
-		// Draw the Hit-Line (vertical playhead)
 		this.ctx.strokeStyle = "#fff";
 		this.ctx.lineWidth = 2;
 		const hitLineX = Math.floor(HIT_LINE_X);
@@ -126,7 +128,6 @@ export class Renderer {
 		this.ctx.lineTo(hitLineX, height);
 		this.ctx.stroke();
 
-		// Culls and draws visible notes (circles with fret number text)
 		if (this.track && this.track.notes.length > 0) {
 			const visibleNotes = calculateVisibleNotes(
 				this.track.notes,
@@ -138,8 +139,7 @@ export class Renderer {
 				this.drawNote(note, currentTime, laneHeight);
 			}
 		}
-		
-		// Draw string lanes OVER notes for better visibility
+
 		this.ctx.strokeStyle = "#555";
 		this.ctx.lineWidth = 1.5;
 		for (let i = 0; i < STRING_COUNT; i++) {

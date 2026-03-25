@@ -1,12 +1,12 @@
+import { Music, Pause, Play, Square, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Play, Pause, Square, Volume2, Music } from "lucide-react";
-import { Slider } from "./ui/slider";
-import { Button } from "./ui/button";
-import { usePlayback } from "../hooks/usePlayback";
-import { useTransportStatus } from "../hooks/useTransportStatus";
-import { useSpeedControl } from "../hooks/useSpeedControl";
-import type { Track } from "../domain/types";
 import * as Tone from "tone";
+import type { Track } from "../domain/types";
+import { usePlayback } from "../hooks/usePlayback";
+import { useSpeedControl } from "../hooks/useSpeedControl";
+import { useTransportStatus } from "../hooks/useTransportStatus";
+import { Button } from "./ui/button";
+import { Slider } from "./ui/slider";
 
 interface TransportBarProps {
 	songDuration: number;

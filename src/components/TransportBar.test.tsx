@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { TransportBar } from "./TransportBar";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
+import { TransportBar } from "./TransportBar";
 
 // Mock ResizeObserver
 beforeAll(() => {
@@ -67,11 +67,10 @@ vi.mock("tone", async () => {
 				schedule: vi.fn(),
 			},
 			Part: class Part {
-				constructor() {}
 				start() {}
 				dispose() {}
 			},
-			Frequency: vi.fn((val: number, type: string) => ({
+			Frequency: vi.fn((_val: number, _type: string) => ({
 				toFrequency: () => 440,
 			})),
 		},

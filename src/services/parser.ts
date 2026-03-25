@@ -11,7 +11,11 @@ import type { Song } from "../domain/types";
 export async function parseFile(file: File): Promise<Song> {
 	if (file.name === "test-song.gp5") {
 		return {
-			metadata: { title: "Test Song", artist: "Test Artist", album: "Test Album" },
+			metadata: {
+				title: "Test Song",
+				artist: "Test Artist",
+				album: "Test Album",
+			},
 			tracks: [
 				{
 					id: "test-track-1",
@@ -25,9 +29,9 @@ export async function parseFile(file: File): Promise<Song> {
 							string: 0,
 							fret: 0,
 							techniques: {},
-						}
+						},
 					],
-				}
+				},
 			],
 			measures: [
 				{
@@ -35,7 +39,7 @@ export async function parseFile(file: File): Promise<Song> {
 					startTime: 0,
 					duration: 4,
 					timeSignature: { numerator: 4, denominator: 4 },
-				}
+				},
 			],
 			durationSeconds: 120,
 		};
