@@ -29,6 +29,7 @@
 - 2026-03-25T18:20Z [TOOL] Prepared the workspace for handoff by recording the user’s commit request in continuity; commit creation is the next step and test execution remains UNCONFIRMED for any edits not already covered above.
 - 2026-03-25T18:28Z [TOOL] Added a renderer regression test proving that a speed change at a fixed `Tone.Transport.seconds` must not move notes, then updated `src/engine/Renderer.ts` to keep `Tone.Transport.seconds` as the visual single source of truth. Verified with `pnpm exec vitest run src/engine/Renderer.test.ts`, `pnpm exec vitest run src/components/Visualizer.test.tsx src/components/Minimap.test.tsx`, `pnpm build`, and `pnpm test -- --run` (`11 files, 58 tests`).
 - 2026-03-25T19:09Z [TOOL] Replaced the renderer-only speed fix with a shared playback timeline mapper in `src/engine/playbackTimeline.ts`, then wired `Renderer`, `Visualizer`, `Minimap`, `TransportBar`, `usePlayback`, and `useSpeedControl` to read/write continuous song time across speed changes and seeks. Verified with focused Vitest coverage (`6 files, 36 tests`), `pnpm test -- --run` (`12 files, 62 tests`), and `pnpm build`.
+- 2026-03-25T19:14Z [TOOL] Committed the playback-speed synchronization fix as `63e6807` (`Fix playback speed visual sync`), then refreshed the GitNexus index with `npx gitnexus analyze`, updating `.gitnexus/meta.json` to `lastCommit: 63e6807f74f1ade3480648c1239cfc14116f1a38` and regenerating the GitNexus stats blocks in `AGENTS.md` and `CLAUDE.md`.
 
 ## [PROGRESS]
 
