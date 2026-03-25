@@ -15,6 +15,7 @@ export class Renderer {
 	private track: Track | null = null;
 	private frameId: number | null = null;
 	private speed: number = 1.0;
+	private maxNoteDuration: number = 0;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -27,6 +28,10 @@ export class Renderer {
 
 	setTrack(track: Track): void {
 		this.track = track;
+		this.maxNoteDuration = track.notes.reduce(
+			(maxDuration, note) => Math.max(maxDuration, note.duration),
+			0,
+		);
 	}
 
 	/**
@@ -128,6 +133,7 @@ export class Renderer {
 				this.track.notes,
 				currentTime,
 				width,
+				this.maxNoteDuration,
 			);
 
 			for (const note of visibleNotes) {

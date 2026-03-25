@@ -1,59 +1,39 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { AudioEngine } from "../engine/AudioEngine";
 import { setPlaybackTimelineSpeed } from "../engine/playbackTimeline";
 
-// Shared ref across all hook instances - stores current speed
-const speedRef = { current: 1.0 };
+const MIN_PLAYBACK_SPEED = 0.25;
+const MAX_PLAYBACK_SPEED = 2;
 
-// Force re-render helper
-let forceUpdateCallbacks: (() => void)[] = [];
+const clampPlaybackSpeed = (multiplier: number): number =>
+	Math.max(MIN_PLAYBACK_SPEED, Math.min(MAX_PLAYBACK_SPEED, multiplier));
 
 /**
- * Hook for controlling playback speed (tempo)
- * Returns speed multiplier, setter, and reset function
- *
- * IMPORTANT: Uses a shared ref + force update pattern because useState
- * creates isolated state per component. All components share the same speed value.
+ * Hook for controlling playback speed (tempo) within a single owner component.
+ * The caller should lift this state and pass it down explicitly.
  */
 export const useSpeedControl = () => {
 	const engine = AudioEngine.getInstance();
-
-	// Create a force update mechanism for this component
-	const [, setTick] = useState(0);
-
-	// Register/deregister this component for force updates
-	useEffect(() => {
-		const forceUpdate = () => setTick((t) => t + 1);
-		forceUpdateCallbacks.push(forceUpdate);
-		return () => {
-			forceUpdateCallbacks = forceUpdateCallbacks.filter(
-				(cb) => cb !== forceUpdate,
-			);
-		};
-	}, []);
+	const [speed, setCurrentSpeed] = useState(1);
 
 	const setSpeed = useCallback(
 		(multiplier: number) => {
-			// Clamp to valid range (0.25 to 2.0)
-			const clamped = Math.max(0.25, Math.min(2.0, multiplier));
-			speedRef.current = clamped;
+			const clamped = clampPlaybackSpeed(multiplier);
+			setCurrentSpeed(clamped);
 			setPlaybackTimelineSpeed(clamped);
 			engine.setSpeed(clamped);
-			// Force all components to re-render
-			forceUpdateCallbacks.forEach((cb) => cb());
 		},
 		[engine],
 	);
 
 	const resetSpeed = useCallback(() => {
-		speedRef.current = 1;
+		setCurrentSpeed(1);
 		setPlaybackTimelineSpeed(1);
 		engine.setSpeed(1);
-		forceUpdateCallbacks.forEach((cb) => cb());
 	}, [engine]);
 
 	return {
-		speed: speedRef.current,
+		speed,
 		setSpeed,
 		resetSpeed,
 	};

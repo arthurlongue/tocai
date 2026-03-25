@@ -11,6 +11,7 @@
 		"test": "vitest",
 		"test:e2e": "playwright test",
 		"test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts tests/e2e/transport.spec.ts tests/e2e/minimap.spec.ts",
+		"test:all": "pnpm test -- --run && pnpm test:e2e && pnpm test:e2e:smoke",
 		"test:e2e:ui": "playwright test --ui"
 	},
 	"dependencies": {

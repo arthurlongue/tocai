@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
+import { syncVisualState } from "../engine/visualSync";
 import { Visualizer } from "./Visualizer";
 
 let transportSeconds = 0;
@@ -30,11 +31,9 @@ vi.mock("../hooks/useTransportStatus", () => ({
 }));
 
 vi.mock("../engine/Renderer", () => ({
-	Renderer: class MockRenderer {
-		constructor() {
-			return mockRenderer;
-		}
-	},
+	Renderer: vi.fn(function MockRenderer() {
+		return mockRenderer;
+	}),
 }));
 
 describe("Visualizer", () => {
@@ -68,5 +67,14 @@ describe("Visualizer", () => {
 		expect(mockRenderer.setSpeed).toHaveBeenLastCalledWith(0.75);
 		expect(getPlaybackTimelineTime).toHaveBeenLastCalledWith(24.25);
 		expect(mockRenderer.drawAt).toHaveBeenLastCalledWith(18.5);
+	});
+
+	it("redraws from the explicit visual sync channel without querying the DOM", () => {
+		render(<Visualizer speed={1} />);
+		vi.clearAllMocks();
+
+		syncVisualState(7.25);
+
+		expect(mockRenderer.drawAt).toHaveBeenCalledWith(7.25);
 	});
 });

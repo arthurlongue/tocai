@@ -1,9 +1,10 @@
 import type React from "react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as Tone from "tone";
 import type { Track } from "../domain/types";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { Renderer } from "../engine/Renderer";
+import { subscribeToVisualSync } from "../engine/visualSync";
 import { useTransportStatus } from "../hooks/useTransportStatus";
 
 interface VisualizerProps {
@@ -19,11 +20,20 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 	const rendererRef = useRef<Renderer | null>(null);
 	const transportStatus = useTransportStatus();
 	const transportStatusRef = useRef(transportStatus);
-	const getIdleCurrentTime = () => getPlaybackTimelineTime(Tone.getTransport().seconds);
+	const getIdleCurrentTime = useCallback(
+		() => getPlaybackTimelineTime(Tone.getTransport().seconds),
+		[],
+	);
 
 	useEffect(() => {
 		transportStatusRef.current = transportStatus;
 	}, [transportStatus]);
+
+	useEffect(() => {
+		return subscribeToVisualSync((songSeconds) => {
+			rendererRef.current?.drawAt(songSeconds);
+		});
+	}, []);
 
 	// Initialize Renderer once and keep it alive for the component lifetime.
 	useEffect(() => {
@@ -59,7 +69,6 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 
 		const renderer = new Renderer(canvas);
 		rendererRef.current = renderer;
-		(canvas as any).__renderer = renderer;
 
 		const observer = new ResizeObserver(resizeCanvas);
 		observer.observe(parent);
@@ -69,9 +78,8 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 			renderer.stop();
 			observer.disconnect();
 			window.removeEventListener("resize", resizeCanvas);
-			delete (canvas as any).__renderer;
 		};
-	}, []);
+	}, [getIdleCurrentTime]);
 
 	// Keep renderer state aligned with the current track, speed, and transport mode.
 	useEffect(() => {
@@ -92,18 +100,14 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 
 		renderer.stop();
 		renderer.drawAt(getIdleCurrentTime());
-	}, [track, speed, transportStatus]);
+	}, [track, speed, transportStatus, getIdleCurrentTime]);
 
 	return (
 		<div
 			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden visualizer"
 			style={{ height: "500px" }}
 		>
-			<canvas
-				ref={canvasRef}
-				className="w-full h-full block"
-				data-testid="visualizer-canvas"
-			/>
+			<canvas ref={canvasRef} className="w-full h-full block" />
 		</div>
 	);
 };

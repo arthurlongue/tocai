@@ -43,6 +43,12 @@ The project follows **Clean Architecture** principles to maintain strict module 
 - **HiDPI Scaling**: Scale the canvas by `window.devicePixelRatio` to prevent blurriness.
 - **Canvas Best Practices**: Use `ctx.save()` and `ctx.restore()` to encapsulate draw styles. Cull notes that are outside the viewport bounds.
 
+## Subagent Usage (Context Hygiene)
+
+**PROACTIVELY use subagents to keep the main context window focused.** Offload context-heavy work to a subagent, especially file exploration, multi-file searches, test runs, and multi-step CLI commands.
+
+Use `Explore` for codebase reading/searching and `runSubagent` for commands or tests that would produce noisy output. Ask for concise summaries, and prefer parallel subagents when the tasks are independent.
+
 ## Directory Overview
 - `docs/ai-specs/`: Comprehensive design documents (Requirements, Architecture, Audio/Parsing, UI/Canvas).
 - `docs/guitarpro-parser/`: API reference for the parsing library.

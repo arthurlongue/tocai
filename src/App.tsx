@@ -12,12 +12,7 @@ import { useSpeedControl } from "./hooks/useSpeedControl";
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
 	const { stop, seek } = usePlayback();
-	const { speed, resetSpeed } = useSpeedControl();
-
-	// Debug: Log speed changes in App
-	useEffect(() => {
-		console.log("[App] speed changed to:", speed);
-	}, [speed]);
+	const { speed, resetSpeed, setSpeed } = useSpeedControl();
 
 	// Load song into audio engine when it changes
 	useEffect(() => {
@@ -102,11 +97,9 @@ function App() {
 						{/* Transport Bar */}
 						<TransportBar
 							songDuration={song.durationSeconds}
+							speed={speed}
+							onSpeedChange={setSpeed}
 							currentTrack={song.tracks[0]}
-							onTrackChange={(index) => {
-								// Handle track change (future implementation)
-								console.log("Track change requested:", index);
-							}}
 						/>
 					</div>
 				)}

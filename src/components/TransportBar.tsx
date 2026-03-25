@@ -3,36 +3,50 @@ import { useEffect, useState } from "react";
 import * as Tone from "tone";
 import type { Track } from "../domain/types";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
+import { subscribeToVisualSync } from "../engine/visualSync";
 import { usePlayback } from "../hooks/usePlayback";
-import { useSpeedControl } from "../hooks/useSpeedControl";
 import { useTransportStatus } from "../hooks/useTransportStatus";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 
 interface TransportBarProps {
 	songDuration: number;
+	speed: number;
+	onSpeedChange: (speed: number) => void;
 	currentTrack?: Track;
-	onTrackChange?: (trackIndex: number) => void;
 }
 
 export const TransportBar: React.FC<TransportBarProps> = ({
 	songDuration,
+	speed,
+	onSpeedChange,
 	currentTrack,
-	onTrackChange,
 }) => {
 	const { play, pause, stop, seek } = usePlayback();
 	const transportStatus = useTransportStatus();
-	const { speed, setSpeed: setSpeedState } = useSpeedControl();
 	const [currentTime, setCurrentTime] = useState(0);
 	const [volume, setVolume] = useState(0.8);
 
-	// Poll current time from Tone.Transport
+	useEffect(
+		() =>
+			subscribeToVisualSync((songSeconds) => {
+				setCurrentTime(songSeconds);
+			}),
+		[],
+	);
+
 	useEffect(() => {
-		const interval = setInterval(() => {
+		if (transportStatus !== "started") {
+			setCurrentTime(getPlaybackTimelineTime());
+			return;
+		}
+
+		setCurrentTime(getPlaybackTimelineTime());
+		const interval = window.setInterval(() => {
 			setCurrentTime(getPlaybackTimelineTime());
 		}, 100);
-		return () => clearInterval(interval);
-	}, []);
+		return () => window.clearInterval(interval);
+	}, [transportStatus]);
 
 	// Handle volume changes
 	const handleVolumeChange = (value: number[]) => {
@@ -51,7 +65,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	// Handle speed changes
 	const handleSpeedChange = (value: number[]) => {
 		const newSpeed = value[0];
-		setSpeedState(newSpeed);
+		onSpeedChange(newSpeed);
 	};
 
 	// Format time as M:SS
@@ -141,7 +155,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 				</div>
 
 				{/* Track Selector (if multiple tracks) */}
-				{currentTrack && onTrackChange && (
+				{currentTrack && (
 					<div className="flex items-center gap-2">
 						<Music className="w-4 h-4 text-muted-foreground" />
 						<span className="text-sm">{currentTrack.name}</span>

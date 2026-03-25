@@ -24,14 +24,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
 		setIsParsing(true);
 		try {
-			// 1. Persist the binary data
-			await saveFile(file.name, file);
-
-			// 2. Parse and flatten the song
 			const song = await parseFile(file);
-
-			// 3. Emit the result
 			onSongLoaded(song);
+			void saveFile(file.name, file).catch((err) => {
+				console.error("Error saving uploaded file:", err);
+			});
 		} catch (err) {
 			console.error("Error handling file:", err);
 			if (onError) {

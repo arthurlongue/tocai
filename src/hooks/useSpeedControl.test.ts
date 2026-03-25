@@ -94,4 +94,16 @@ describe("useSpeedControl", () => {
 		expect(mockEngine.setSpeed).toHaveBeenCalledWith(1);
 		expect(setPlaybackTimelineSpeed).toHaveBeenCalledWith(1);
 	});
+
+	it("keeps hook instances isolated", () => {
+		const first = renderHook(() => useSpeedControl());
+		const second = renderHook(() => useSpeedControl());
+
+		act(() => {
+			first.result.current.setSpeed(1.5);
+		});
+
+		expect(first.result.current.speed).toBe(1.5);
+		expect(second.result.current.speed).toBe(1);
+	});
 });

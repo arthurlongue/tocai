@@ -2,6 +2,7 @@ import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getPlaybackTimelineTime,
+	getTransportSecondsForSongTime,
 	resetPlaybackTimelineState,
 	setPlaybackTimelineSpeed,
 	syncPlaybackTimeline,
@@ -43,5 +44,14 @@ describe("playbackTimeline", () => {
 
 		transportSeconds = 8;
 		expect(getPlaybackTimelineTime()).toBe(15);
+	});
+
+	it("derives raw transport seconds for a target song time at the current speed", () => {
+		transportSeconds = 6;
+		setPlaybackTimelineSpeed(1.5);
+		syncPlaybackTimeline(12);
+
+		expect(getTransportSecondsForSongTime(18)).toBe(10);
+		expect(getTransportSecondsForSongTime(-3)).toBe(0);
 	});
 });

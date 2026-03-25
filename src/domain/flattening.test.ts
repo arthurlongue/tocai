@@ -20,7 +20,7 @@ describe("flattenSong", () => {
 			pullOff: false,
 			tie: { destination: false },
 			bend: null,
-		}) as any;
+		}) as unknown as TabNote;
 
 	const mockBeat = (notes: TabNote[], isRest = false): TabBeat =>
 		({
@@ -33,7 +33,7 @@ describe("flattenSong", () => {
 			index: 0,
 			barIndex: 0,
 			dynamic: "mf",
-		}) as any;
+		}) as unknown as TabBeat;
 
 	const mockBar = (
 		beats: TabBeat[],
@@ -50,7 +50,7 @@ describe("flattenSong", () => {
 			keySignature: 0,
 			section: null,
 			repeatCount: repeatEnd ? 2 : 1,
-		}) as any;
+		}) as unknown as TabBar;
 
 	const mockTrack = (bars: TabBar[]): TabTrack =>
 		({
@@ -62,7 +62,7 @@ describe("flattenSong", () => {
 			bars,
 			shortName: "Gtr",
 			instrument: { id: 25 },
-		}) as any;
+		}) as unknown as TabTrack;
 
 	const mockSong = (tracks: TabTrack[]): TabSong =>
 		({
@@ -70,7 +70,7 @@ describe("flattenSong", () => {
 			artist: "Test Artist",
 			album: "Test Album",
 			tracks,
-		}) as any;
+		}) as unknown as TabSong;
 
 	it("should flatten a simple track into notes with absolute timing", () => {
 		const beat1 = mockBeat([mockNote(0, 5)]); // string 0, fret 5

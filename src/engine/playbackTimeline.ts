@@ -24,6 +24,20 @@ export const getPlaybackTimelineTime = (
 	);
 };
 
+export const getTransportSecondsForSongTime = (songSeconds: number): number => {
+	const targetSongSeconds = clampSongSeconds(songSeconds);
+
+	if (state.speed === 0) {
+		return state.anchorTransportSeconds;
+	}
+
+	return Math.max(
+		0,
+		state.anchorTransportSeconds +
+			(targetSongSeconds - state.anchorSongSeconds) / state.speed,
+	);
+};
+
 export const setPlaybackTimelineSpeed = (
 	speed: number,
 	rawTransportSeconds: number = Tone.getTransport().seconds,

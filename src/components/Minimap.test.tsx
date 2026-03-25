@@ -1,6 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
+import { syncVisualState } from "../engine/visualSync";
 import { Minimap } from "./Minimap";
 
 let timelineTime = 0;
@@ -26,11 +27,9 @@ vi.mock("../engine/playbackTimeline", () => ({
 }));
 
 vi.mock("../engine/MinimapRenderer", () => ({
-	MinimapRenderer: class MockMinimapRenderer {
-		constructor() {
-			return mockMinimapRenderer;
-		}
-	},
+	MinimapRenderer: vi.fn(function MockMinimapRenderer() {
+		return mockMinimapRenderer;
+	}),
 }));
 
 const createMockTrack = (): Track => ({
@@ -105,8 +104,11 @@ describe("Minimap", () => {
 
 		const canvas = container.querySelector("canvas");
 		expect(canvas).not.toBeNull();
+		if (!canvas) {
+			throw new Error("Expected minimap canvas to render");
+		}
 
-		vi.spyOn(canvas!, "getBoundingClientRect").mockReturnValue({
+		vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
 			left: 0,
 			top: 0,
 			width: 800,
@@ -118,9 +120,19 @@ describe("Minimap", () => {
 			toJSON: () => ({}),
 		} as DOMRect);
 
-		fireEvent.pointerDown(canvas!, { clientX: 400 });
+		fireEvent.pointerDown(canvas, { clientX: 400 });
 
 		expect(mockMinimapRenderer.draw).toHaveBeenCalledWith(2.5);
 		expect(mockOnSeek).toHaveBeenCalledWith(2.5);
+	});
+
+	it("redraws from the explicit visual sync channel without DOM lookups", () => {
+		const track = createMockTrack();
+		render(<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />);
+		vi.clearAllMocks();
+
+		syncVisualState(7.25);
+
+		expect(mockMinimapRenderer.draw).toHaveBeenCalledWith(7.25);
 	});
 });

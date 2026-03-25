@@ -12,21 +12,48 @@ const mockCtx = {
 	stroke: vi.fn(),
 	setTransform: vi.fn(),
 	scale: vi.fn(),
+	save: vi.fn(),
+	restore: vi.fn(),
+	drawImage: vi.fn(),
 	fillText: vi.fn(),
 	set fillStyle(_val: string) {},
 	set strokeStyle(_val: string) {},
 	set lineWidth(_val: number) {},
+	set font(_val: string) {},
+	set textAlign(_val: CanvasTextAlign) {},
 };
 
 describe("MinimapRenderer", () => {
 	let canvas: HTMLCanvasElement;
 	let renderer: MinimapRenderer;
+	let layerCtx: typeof mockCtx;
 
 	beforeEach(() => {
 		canvas = document.createElement("canvas");
 		canvas.width = 800;
 		canvas.height = 48;
-		vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as any);
+		layerCtx = {
+			...mockCtx,
+			clearRect: vi.fn(),
+			fillRect: vi.fn(),
+			beginPath: vi.fn(),
+			moveTo: vi.fn(),
+			lineTo: vi.fn(),
+			stroke: vi.fn(),
+			setTransform: vi.fn(),
+			scale: vi.fn(),
+			save: vi.fn(),
+			restore: vi.fn(),
+			drawImage: vi.fn(),
+			fillText: vi.fn(),
+		};
+		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+			function getContext() {
+				return (this === canvas
+					? mockCtx
+					: layerCtx) as unknown as CanvasRenderingContext2D;
+			},
+		);
 		renderer = new MinimapRenderer(canvas);
 	});
 
@@ -87,5 +114,36 @@ describe("MinimapRenderer", () => {
 			const time = renderer.getTimeFromX(400);
 			expect(time).toBeCloseTo(2.5, 1);
 		});
+
+		it("clamps negative clicks to the song start", () => {
+			const track = createMockTrack();
+			renderer.setTrack(track);
+
+			const time = renderer.getTimeFromX(-50);
+			expect(time).toBe(0);
+		});
+
+		it("clamps overshooting clicks to the song end", () => {
+			const track = createMockTrack();
+			renderer.setTrack(track);
+
+			const time = renderer.getTimeFromX(900);
+			expect(time).toBeCloseTo(5, 1);
+		});
+	});
+
+	it("reuses the cached static layer for later frames", () => {
+		const track = createMockTrack();
+
+		renderer.setTrack(track);
+		expect(layerCtx.fillRect).toHaveBeenCalled();
+
+		vi.clearAllMocks();
+
+		renderer.draw(1);
+		renderer.draw(2);
+
+		expect(mockCtx.drawImage).toHaveBeenCalledTimes(2);
+		expect(layerCtx.fillRect).not.toHaveBeenCalled();
 	});
 });

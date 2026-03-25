@@ -1,100 +1,195 @@
-// Generate a minimal valid Guitar Pro 5 file for testing
-// GP5 format: 44 bytes header + song data
-
 const fs = require("node:fs");
 const path = require("node:path");
 
-function createMinimalGP5() {
-	const buffer = Buffer.alloc(4096);
-	let offset = 0;
-
-	// GP5 Header (44 bytes)
-	// Magic number: "FICHIER GUITAR PRO v5.00" (28 bytes)
-	const magic = "FICHIER GUITAR PRO v5.00";
-	buffer.write(magic, offset, "utf8");
-	offset += 28;
-
-	// Version info (4 bytes): 5.0.0 = 0x05000000 in little-endian
-	buffer.writeUInt32LE(0x05000000, offset);
-	offset += 4;
-
-	// Song name (32 bytes, null-padded)
-	buffer.write("Test Song", offset, "utf8");
-	offset += 32;
-
-	// Rest of header (zeros for minimal file)
-	// This includes: artist, album, copyright, etc.
-	// We'll leave them as zeros
-
-	// Skip to offset 256 for track info
-	offset = 256;
-
-	// Number of tracks (4 bytes)
-	buffer.writeUInt32LE(1, offset);
-	offset += 4;
-
-	// Track 1 header
-	// Track name (40 bytes)
-	buffer.write("Test Guitar", offset, "utf8");
-	offset += 40;
-
-	// Number of strings (4 bytes) - 6 strings
-	buffer.writeUInt32LE(6, offset);
-	offset += 4;
-
-	// String tunings (6 * 4 = 24 bytes) - E2, A2, D3, G3, B3, E4
-	const tunings = [40, 45, 50, 55, 59, 64]; // MIDI note numbers
-	for (const tuning of tunings) {
-		buffer.writeUInt32LE(tuning, offset);
-		offset += 4;
+class Writer {
+	constructor(size = 4096) {
+		this.buf = Buffer.alloc(size);
+		this.pos = 0;
 	}
 
-	// Number of bars (4 bytes) - 1 bar
-	buffer.writeUInt32LE(1, offset);
-	offset += 4;
+	byte(value = 0) {
+		this.buf.writeUInt8(value & 0xff, this.pos);
+		this.pos += 1;
+	}
 
-	// Time signature (8 bytes): 4/4
-	buffer.writeUInt32LE(4, offset); // numerator
-	offset += 4;
-	buffer.writeUInt32LE(4, offset); // denominator
-	offset += 4;
+	signedByte(value = 0) {
+		this.buf.writeInt8(value, this.pos);
+		this.pos += 1;
+	}
 
-	// Tempo (4 bytes) - 120 BPM
-	buffer.writeUInt32LE(120, offset);
-	offset += 4;
+	boolean(value = false) {
+		this.byte(value ? 1 : 0);
+	}
 
-	// Add minimal bar/beat data
-	// Bar header (simplified)
-	buffer.writeUInt32LE(1, offset); // 1 beat in bar
-	offset += 4;
+	short(value = 0) {
+		this.buf.writeInt16LE(value, this.pos);
+		this.pos += 2;
+	}
 
-	// Beat data
-	buffer.writeUInt32LE(1, offset); // quarter note duration
-	offset += 4;
+	int(value = 0) {
+		this.buf.writeInt32LE(value, this.pos);
+		this.pos += 4;
+	}
 
-	// Note on string 6 (high E), fret 0 (open)
-	buffer.writeUInt32LE(6, offset); // string number (1-based)
-	offset += 4;
-	buffer.writeUInt32LE(0, offset); // fret
-	offset += 4;
+	byteSizeString(value, fixedLength) {
+		const bytes = Buffer.from(value, "latin1");
+		this.byte(bytes.length);
+		bytes.copy(this.buf, this.pos);
+		this.pos += bytes.length;
+		this.pos += Math.max(0, fixedLength - Math.min(bytes.length, fixedLength));
+	}
 
-	// End of file marker
-	buffer.writeUInt32LE(0, offset);
+	intByteSizeString(value = "") {
+		const bytes = Buffer.from(value, "latin1");
+		this.int(bytes.length + 1);
+		this.byte(bytes.length);
+		bytes.copy(this.buf, this.pos);
+		this.pos += bytes.length;
+	}
 
-	return buffer.slice(0, offset + 4);
+	intString(value = "") {
+		const bytes = Buffer.from(value, "latin1");
+		this.int(bytes.length);
+		bytes.copy(this.buf, this.pos);
+		this.pos += bytes.length;
+	}
+
+	save(filePath) {
+		fs.writeFileSync(filePath, this.buf.subarray(0, this.pos));
+	}
 }
 
-const gp5Buffer = createMinimalGP5();
-const fixturesDir = path.join(__dirname, "..", "fixtures");
+function createParserValidGp5() {
+	const writer = new Writer();
 
-// Ensure fixtures directory exists
+	writer.byteSizeString("FICHIER GUITAR PRO v5.10", 30);
+
+	for (const value of [
+		"Test Song",
+		"",
+		"Test Artist",
+		"",
+		"",
+		"",
+		"",
+		"",
+		"",
+	]) {
+		writer.intByteSizeString(value);
+	}
+
+	writer.int(0);
+
+	writer.int(0);
+	for (let i = 0; i < 5; i++) {
+		writer.int(0);
+		writer.intString("");
+	}
+
+	writer.int(0);
+	writer.int(0);
+	for (let i = 0; i < 11; i++) {
+		writer.signedByte(0);
+	}
+
+	for (let i = 0; i < 7; i++) {
+		writer.int(0);
+	}
+	writer.short(0);
+	for (let i = 0; i < 10; i++) {
+		writer.intByteSizeString("");
+	}
+
+	writer.intByteSizeString("");
+	writer.int(120);
+	writer.boolean(false);
+	writer.signedByte(0);
+	writer.int(0);
+
+	for (let i = 0; i < 64; i++) {
+		writer.int(25);
+		writer.byte(100);
+		writer.byte(64);
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+	}
+
+	for (let i = 0; i < 19; i++) {
+		writer.short(0);
+	}
+
+	writer.int(0);
+	writer.int(4);
+	writer.int(1);
+
+	writer.byte(0);
+	writer.byte(0);
+	writer.byte(0);
+	for (let i = 0; i < 3; i++) {
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+		writer.byte(0);
+	}
+
+	writer.byte(0);
+	writer.byte(0);
+	writer.byteSizeString("Guitar", 40);
+	writer.int(6);
+	for (const tuning of [64, 59, 55, 50, 45, 40, 0]) {
+		writer.int(tuning);
+	}
+	writer.int(1);
+	writer.int(1);
+	writer.int(2);
+	writer.int(24);
+	writer.int(0);
+	writer.int(0);
+	writer.short(0);
+	writer.byte(0);
+	writer.byte(0);
+
+	writer.byte(0);
+	for (let i = 0; i < 24; i++) {
+		writer.byte(0);
+	}
+	for (let i = 0; i < 4; i++) {
+		writer.int(0);
+	}
+	for (let i = 0; i < 4; i++) {
+		writer.signedByte(0);
+	}
+	writer.intByteSizeString("");
+	writer.intByteSizeString("");
+	writer.byte(0);
+
+	for (let i = 0; i < 4; i++) {
+		writer.int(1);
+		writer.byte(0);
+		writer.signedByte(-2);
+		writer.byte(64);
+		writer.byte(0);
+		writer.byte(0);
+		writer.short(0);
+		writer.int(0);
+		writer.byte(0);
+	}
+
+	return writer;
+}
+
+const fixturesDir = path.join(__dirname, "..", "fixtures");
 if (!fs.existsSync(fixturesDir)) {
 	fs.mkdirSync(fixturesDir, { recursive: true });
 }
 
-// Write the GP5 file
-const gp5Path = path.join(fixturesDir, "test-song.gp5");
-fs.writeFileSync(gp5Path, gp5Buffer);
+const outputPath = path.join(fixturesDir, "test-song.gp5");
+createParserValidGp5().save(outputPath);
 
-console.log(`Created minimal GP5 test fixture: ${gp5Path}`);
-console.log(`File size: ${gp5Buffer.length} bytes`);
+const { size } = fs.statSync(outputPath);
+console.log(`Created parser-valid GP5 test fixture: ${outputPath}`);
+console.log(`File size: ${size} bytes`);

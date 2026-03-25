@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Track } from "../domain/types";
 import { MinimapRenderer } from "../engine/MinimapRenderer";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
+import { subscribeToVisualSync } from "../engine/visualSync";
 import { useTransportStatus } from "../hooks/useTransportStatus";
 
 interface MinimapProps {
@@ -25,12 +26,18 @@ export const Minimap: React.FC<MinimapProps> = ({
 		transportStatusRef.current = transportStatus;
 	}, [transportStatus]);
 
-	const stopAnimation = () => {
+	useEffect(() => {
+		return subscribeToVisualSync((songSeconds) => {
+			rendererRef.current?.draw(songSeconds);
+		});
+	}, []);
+
+	const stopAnimation = useCallback(() => {
 		if (animationFrameRef.current !== null) {
 			cancelAnimationFrame(animationFrameRef.current);
 			animationFrameRef.current = null;
 		}
-	};
+	}, []);
 
 	// Initialize renderer
 	useEffect(() => {
@@ -47,7 +54,6 @@ export const Minimap: React.FC<MinimapProps> = ({
 		const renderer = new MinimapRenderer(canvas);
 		renderer.setTrack(track, songDuration);
 		rendererRef.current = renderer;
-		(canvas as HTMLCanvasElement & { __minimapRenderer?: MinimapRenderer }).__minimapRenderer = renderer;
 
 		const drawIdleFrame = () => {
 			if (!rendererRef.current) return;
@@ -97,11 +103,8 @@ export const Minimap: React.FC<MinimapProps> = ({
 		return () => {
 			stopAnimation();
 			window.removeEventListener("resize", resizeCanvas);
-			delete (
-				canvas as HTMLCanvasElement & { __minimapRenderer?: MinimapRenderer }
-			).__minimapRenderer;
 		};
-	}, [track, songDuration]);
+	}, [track, songDuration, stopAnimation]);
 
 	useEffect(() => {
 		const renderer = rendererRef.current;
@@ -123,7 +126,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 
 		stopAnimation();
 		renderer.draw(getPlaybackTimelineTime());
-	}, [transportStatus]);
+	}, [transportStatus, stopAnimation]);
 
 	// Handle click to seek
 	const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -141,7 +144,6 @@ export const Minimap: React.FC<MinimapProps> = ({
 			<canvas
 				ref={canvasRef}
 				className="w-full h-12 cursor-pointer"
-				data-testid="minimap-canvas"
 				onPointerDown={handlePointerDown}
 			/>
 		</div>

@@ -68,6 +68,21 @@ describe("Layout Math", () => {
 			expect(visible).toHaveLength(1);
 			expect(visible[0].startTime).toBe(2.0);
 		});
+
+		it("keeps long notes that started before the viewport but still overlap it", () => {
+			const longNote: PlaybackNote = {
+				startTime: 0.2,
+				duration: 1.5,
+				pitch: 0,
+				string: 0,
+				fret: 0,
+				techniques: {},
+			};
+
+			const visible = calculateVisibleNotes([longNote], 1.0, 800, 1.5);
+			expect(visible).toHaveLength(1);
+			expect(visible[0]).toBe(longNote);
+		});
 	});
 
 	describe("HIT_LINE_X constant", () => {

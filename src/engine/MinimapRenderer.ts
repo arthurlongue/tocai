@@ -6,6 +6,7 @@ export class MinimapRenderer {
 	private ctx: CanvasRenderingContext2D;
 	private track: Track | null = null;
 	private songDuration: number = 0;
+	private staticLayerCanvas: HTMLCanvasElement | null = null;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
@@ -19,6 +20,7 @@ export class MinimapRenderer {
 	setTrack(track: Track, songDuration?: number): void {
 		this.track = track;
 		this.songDuration = songDuration ?? this.calculateSongDuration(track);
+		this.staticLayerCanvas = null;
 		this.draw();
 	}
 
@@ -36,44 +38,127 @@ export class MinimapRenderer {
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
 		const height = this.canvas.height / dpr;
+		const pixelsPerSecond = width / this.songDuration;
+		const laneHeight = height / STRING_COUNT;
+		const staticLayer = this.getOrCreateStaticLayer(
+			dpr,
+			width,
+			height,
+			pixelsPerSecond,
+			laneHeight,
+		);
 
-		// Reset transform and clear
 		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		// Scale for HiDPI so we can use CSS pixels
-		this.ctx.scale(dpr, dpr);
-
-		// Draw background
-		this.ctx.fillStyle = "#0a0a0a";
-		this.ctx.fillRect(0, 0, width, height);
-
-		// Calculate scaling
-		const pixelsPerSecond = width / this.songDuration;
-		const laneHeight = height / STRING_COUNT;
-
-		// Draw string lanes
-		this.ctx.strokeStyle = "#333";
-		this.ctx.lineWidth = 1;
-		for (let i = 0; i < STRING_COUNT; i++) {
-			const y = Math.floor(i * laneHeight);
-			this.ctx.beginPath();
-			this.ctx.moveTo(0, y);
-			this.ctx.lineTo(width, y);
-			this.ctx.stroke();
+		if (staticLayer) {
+			this.ctx.drawImage(staticLayer, 0, 0);
+		} else {
+			this.ctx.save();
+			this.ctx.scale(dpr, dpr);
+			this.drawStaticLayer(
+				this.ctx,
+				width,
+				height,
+				pixelsPerSecond,
+				laneHeight,
+			);
+			this.ctx.restore();
 		}
 
-		// Draw compressed notes as rectangles
+		this.ctx.save();
+		this.ctx.scale(dpr, dpr);
+		this.drawPlayhead(width, height, currentTime, pixelsPerSecond);
+		this.ctx.restore();
+	}
+
+	private getOrCreateStaticLayer(
+		dpr: number,
+		width: number,
+		height: number,
+		pixelsPerSecond: number,
+		laneHeight: number,
+	): HTMLCanvasElement | null {
+		if (
+			this.staticLayerCanvas &&
+			this.staticLayerCanvas.width === this.canvas.width &&
+			this.staticLayerCanvas.height === this.canvas.height
+		) {
+			return this.staticLayerCanvas;
+		}
+
+		const layerCanvas = document.createElement("canvas");
+		layerCanvas.width = this.canvas.width;
+		layerCanvas.height = this.canvas.height;
+		const layerContext = layerCanvas.getContext("2d");
+
+		if (!layerContext) {
+			this.staticLayerCanvas = null;
+			return null;
+		}
+
+		layerContext.save();
+		layerContext.scale(dpr, dpr);
+		this.drawStaticLayer(
+			layerContext,
+			width,
+			height,
+			pixelsPerSecond,
+			laneHeight,
+		);
+		layerContext.restore();
+
+		this.staticLayerCanvas = layerCanvas;
+		return layerCanvas;
+	}
+
+	private drawStaticLayer(
+		context: CanvasRenderingContext2D,
+		width: number,
+		height: number,
+		pixelsPerSecond: number,
+		laneHeight: number,
+	): void {
+		if (!this.track) return;
+
+		context.fillStyle = "#0a0a0a";
+		context.fillRect(0, 0, width, height);
+
+		context.strokeStyle = "#333";
+		context.lineWidth = 1;
+		for (let i = 0; i < STRING_COUNT; i++) {
+			const y = Math.floor(i * laneHeight);
+			context.beginPath();
+			context.moveTo(0, y);
+			context.lineTo(width, y);
+			context.stroke();
+		}
+
 		for (const note of this.track.notes) {
 			const x = note.startTime * pixelsPerSecond;
 			const y = note.string * laneHeight;
 			const noteWidth = Math.max(1, note.duration * pixelsPerSecond);
 
-			this.ctx.fillStyle = STRING_COLORS[note.string] || "#fff";
-			this.ctx.fillRect(x, y, noteWidth, laneHeight);
+			context.fillStyle = STRING_COLORS[note.string] || "#fff";
+			context.fillRect(x, y, noteWidth, laneHeight);
 		}
 
-		// Draw current position playhead (clamped to canvas bounds)
+		context.fillStyle = "#666";
+		context.font = "10px sans-serif";
+		context.textAlign = "right";
+		context.fillText(
+			this.formatDuration(this.songDuration),
+			width - 2,
+			height - 2,
+		);
+	}
+
+	private drawPlayhead(
+		width: number,
+		height: number,
+		currentTime: number,
+		pixelsPerSecond: number,
+	): void {
 		const playheadX = Math.min(
 			width,
 			Math.max(0, currentTime * pixelsPerSecond),
@@ -84,13 +169,6 @@ export class MinimapRenderer {
 		this.ctx.moveTo(playheadX, 0);
 		this.ctx.lineTo(playheadX, height);
 		this.ctx.stroke();
-
-		// Draw song duration marker at end
-		this.ctx.fillStyle = "#666";
-		this.ctx.font = "10px sans-serif";
-		this.ctx.textAlign = "right";
-		const durationText = this.formatDuration(this.songDuration);
-		this.ctx.fillText(durationText, width - 2, height - 2);
 	}
 
 	private formatDuration(seconds: number): string {
@@ -104,7 +182,9 @@ export class MinimapRenderer {
 
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
+		if (width <= 0) return 0;
+		const clampedX = Math.min(width, Math.max(0, x));
 
-		return (x / width) * this.songDuration;
+		return (clampedX / width) * this.songDuration;
 	}
 }

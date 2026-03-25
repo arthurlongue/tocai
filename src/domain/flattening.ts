@@ -1,13 +1,22 @@
-import { beatDurationMs, type TabSong } from "guitarpro-parser";
+import { beatDurationMs, type TabBar, type TabSong } from "guitarpro-parser";
 import type { Measure, PlaybackNote, Song, Track } from "./types";
 
+type FlattenedTrack = {
+	track: Track;
+	measures: Measure[];
+};
+
+const getRepeatCount = (bar: TabBar): number => {
+	const repeatCount = (bar as TabBar & { repeatCount?: number }).repeatCount;
+	return repeatCount ?? (bar.repeatEnd ? 2 : 1);
+};
+
 export function flattenSong(tabSong: TabSong): Song {
-	const tracks: Track[] = tabSong.tracks.map((tabTrack) => {
+	const flattenedTracks: FlattenedTrack[] = tabSong.tracks.map((tabTrack) => {
 		const notes: PlaybackNote[] = [];
 		const measures: Measure[] = [];
+		const lastNoteByString = new Map<number, PlaybackNote>();
 		let currentTime = 0;
-
-		// Repeat tracking
 		let i = 0;
 		let repeatStartIndex = 0;
 		const bars = tabTrack.bars;
@@ -19,7 +28,6 @@ export function flattenSong(tabSong: TabSong): Song {
 				repeatStartIndex = i;
 			}
 
-			// Record measure info (only for the first track to avoid duplication in Song)
 			let barDuration = 0;
 			for (const beat of bar.beats) {
 				barDuration += beatDurationMs(beat) / 1000;
@@ -32,23 +40,16 @@ export function flattenSong(tabSong: TabSong): Song {
 				timeSignature: bar.timeSignature,
 			});
 
-			// Flatten notes
 			for (const beat of bar.beats) {
 				const duration = beatDurationMs(beat) / 1000;
 
 				if (!beat.isRest) {
 					for (const note of beat.notes) {
-						// Calculate MIDI pitch: string tuning + fret + capo
-						// Note: guitarpro-parser tuningMidi is indexed [stringIndex]
 						const basePitch = tabTrack.tuningMidi[note.string] || 0;
 						const pitch = basePitch + note.fret + (tabTrack.capoFret || 0);
 
-						// Handle tied notes: if this note is a tie destination, find the previous note on the same string
 						if (note.tie.destination) {
-							const previousNote = notes
-								.slice()
-								.reverse()
-								.find((n) => n.string === note.string);
+							const previousNote = lastNoteByString.get(note.string);
 							if (
 								previousNote &&
 								Math.abs(
@@ -56,11 +57,12 @@ export function flattenSong(tabSong: TabSong): Song {
 								) < 0.01
 							) {
 								previousNote.duration += duration;
+								lastNoteByString.set(note.string, previousNote);
 								continue;
 							}
 						}
 
-						notes.push({
+						const playbackNote: PlaybackNote = {
 							pitch,
 							startTime: currentTime,
 							duration,
@@ -73,15 +75,17 @@ export function flattenSong(tabSong: TabSong): Song {
 								hammerOn: note.hammerOn,
 								pullOff: note.pullOff,
 							},
-						});
+						};
+
+						notes.push(playbackNote);
+						lastNoteByString.set(note.string, playbackNote);
 					}
 				}
 				currentTime += duration;
 			}
 
-			// Handle repeats
 			processedRepeatCounts[i]++;
-			const targetRepeats = (bar as any).repeatCount || (bar.repeatEnd ? 2 : 1);
+			const targetRepeats = getRepeatCount(bar);
 
 			if (bar.repeatEnd && processedRepeatCounts[i] < targetRepeats) {
 				i = repeatStartIndex;
@@ -91,16 +95,18 @@ export function flattenSong(tabSong: TabSong): Song {
 		}
 
 		return {
-			id: tabTrack.id,
-			name: tabTrack.name,
-			tuning: tabTrack.tuningMidi,
-			notes,
-			_measures: measures, // Temporary internal storage to aggregate later
-		} as Track & { _measures: Measure[] };
+			track: {
+				id: tabTrack.id,
+				name: tabTrack.name,
+				tuning: tabTrack.tuningMidi,
+				notes,
+			},
+			measures,
+		};
 	});
 
-	// Global measures are derived from the first track (they should be identical across tracks in GP)
-	const measures = tracks.length > 0 ? (tracks[0] as any)._measures || [] : [];
+	const tracks = flattenedTracks.map(({ track }) => track);
+	const measures = flattenedTracks[0]?.measures ?? [];
 
 	const durationSeconds = tracks.reduce((max, track) => {
 		const lastNote = track.notes[track.notes.length - 1];

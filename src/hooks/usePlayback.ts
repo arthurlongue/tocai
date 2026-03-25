@@ -1,24 +1,12 @@
 import { useCallback } from "react";
 import * as Tone from "tone";
 import { AudioEngine } from "../engine/AudioEngine";
-import type { MinimapRenderer } from "../engine/MinimapRenderer";
 import {
 	getPlaybackTimelineTime,
+	getTransportSecondsForSongTime,
 	syncPlaybackTimeline,
 } from "../engine/playbackTimeline";
-import type { Renderer } from "../engine/Renderer";
-
-const syncVisualState = (seconds: number) => {
-	const visualizerCanvas = document.querySelector(
-		'[data-testid="visualizer-canvas"]',
-	) as (HTMLCanvasElement & { __renderer?: Renderer }) | null;
-	const minimapCanvas = document.querySelector(
-		'[data-testid="minimap-canvas"]',
-	) as (HTMLCanvasElement & { __minimapRenderer?: MinimapRenderer }) | null;
-
-	visualizerCanvas?.__renderer?.drawAt(seconds);
-	minimapCanvas?.__minimapRenderer?.draw(seconds);
-};
+import { syncVisualState } from "../engine/visualSync";
 
 /**
  * Hook providing methods to control the Tone.Transport playback.
@@ -49,9 +37,12 @@ export const usePlayback = () => {
 
 	const seek = useCallback(async (seconds: number) => {
 		await Tone.start();
-		Tone.getTransport().seconds = seconds;
-		syncPlaybackTimeline(seconds, Tone.getTransport().seconds);
-		syncVisualState(seconds);
+		const nextSongSeconds = Math.max(0, seconds);
+		const nextTransportSeconds =
+			getTransportSecondsForSongTime(nextSongSeconds);
+		Tone.getTransport().seconds = nextTransportSeconds;
+		syncPlaybackTimeline(nextSongSeconds, nextTransportSeconds);
+		syncVisualState(nextSongSeconds);
 	}, []);
 
 	return {

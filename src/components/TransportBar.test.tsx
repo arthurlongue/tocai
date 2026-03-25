@@ -1,6 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Track } from "../domain/types";
+import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
+import { syncVisualState } from "../engine/visualSync";
 import { TransportBar } from "./TransportBar";
 
 // Mock ResizeObserver
@@ -32,14 +34,6 @@ vi.mock("../hooks/useTransportStatus", async () => {
 		useTransportStatus: () => mockTransportStatus,
 	};
 });
-
-vi.mock("../hooks/useSpeedControl", () => ({
-	useSpeedControl: () => ({
-		speed: 1,
-		setSpeed: vi.fn(),
-		resetSpeed: vi.fn(),
-	}),
-}));
 
 vi.mock("../engine/playbackTimeline", () => ({
 	getPlaybackTimelineTime: vi.fn(() => 0),
@@ -98,8 +92,9 @@ describe("TransportBar", () => {
 		render(
 			<TransportBar
 				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
 				currentTrack={mockTrack}
-				onTrackChange={vi.fn()}
 			/>,
 		);
 
@@ -111,8 +106,9 @@ describe("TransportBar", () => {
 		render(
 			<TransportBar
 				songDuration={125}
+				speed={1}
+				onSpeedChange={vi.fn()}
 				currentTrack={mockTrack}
-				onTrackChange={vi.fn()}
 			/>,
 		);
 
@@ -127,8 +123,9 @@ describe("TransportBar", () => {
 		render(
 			<TransportBar
 				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
 				currentTrack={mockTrack}
-				onTrackChange={vi.fn()}
 			/>,
 		);
 
@@ -140,8 +137,9 @@ describe("TransportBar", () => {
 		render(
 			<TransportBar
 				songDuration={300}
+				speed={1}
+				onSpeedChange={vi.fn()}
 				currentTrack={mockTrack}
-				onTrackChange={vi.fn()}
 			/>,
 		);
 
@@ -153,12 +151,68 @@ describe("TransportBar", () => {
 		render(
 			<TransportBar
 				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
 				currentTrack={mockTrack}
-				onTrackChange={vi.fn()}
 			/>,
 		);
 
 		const trackElements = screen.getAllByText("Guitar");
 		expect(trackElements.length).toBeGreaterThan(0);
+	});
+
+	it("polls playback time only while started", () => {
+		vi.useFakeTimers();
+		const playbackTime = vi.mocked(getPlaybackTimelineTime);
+		const { rerender, unmount } = render(
+			<TransportBar
+				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
+				currentTrack={mockTrack}
+			/>,
+		);
+
+		expect(playbackTime).toHaveBeenCalledTimes(1);
+
+		act(() => {
+			vi.advanceTimersByTime(500);
+		});
+		expect(playbackTime).toHaveBeenCalledTimes(1);
+
+		mockTransportStatus = "started";
+		rerender(
+			<TransportBar
+				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
+				currentTrack={mockTrack}
+			/>,
+		);
+
+		act(() => {
+			vi.advanceTimersByTime(500);
+		});
+		expect(playbackTime.mock.calls.length).toBeGreaterThan(1);
+
+		unmount();
+		vi.useRealTimers();
+	});
+
+	it("updates the displayed time from playback sync events while idle", () => {
+		render(
+			<TransportBar
+				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
+				currentTrack={mockTrack}
+			/>,
+		);
+
+		act(() => {
+			syncVisualState(12.5);
+		});
+
+		expect(screen.getAllByText(/0:12/).length).toBeGreaterThan(0);
 	});
 });

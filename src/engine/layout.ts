@@ -1,6 +1,44 @@
 import type { PlaybackNote } from "../domain/types";
 import { HIT_LINE_X, PIXELS_PER_SECOND } from "./constants";
 
+const findFirstNoteStartingAtOrAfter = (
+	notes: PlaybackNote[],
+	targetTime: number,
+): number => {
+	let low = 0;
+	let high = notes.length;
+
+	while (low < high) {
+		const mid = Math.floor((low + high) / 2);
+		if (notes[mid].startTime < targetTime) {
+			low = mid + 1;
+		} else {
+			high = mid;
+		}
+	}
+
+	return low;
+};
+
+const findFirstNoteStartingAfter = (
+	notes: PlaybackNote[],
+	targetTime: number,
+): number => {
+	let low = 0;
+	let high = notes.length;
+
+	while (low < high) {
+		const mid = Math.floor((low + high) / 2);
+		if (notes[mid].startTime <= targetTime) {
+			low = mid + 1;
+		} else {
+			high = mid;
+		}
+	}
+
+	return low;
+};
+
 /**
  * Calculates X coordinate relative to hit-line
  */
@@ -25,6 +63,7 @@ export function calculateVisibleNotes(
 	notes: PlaybackNote[],
 	currentTime: number,
 	viewportWidth: number,
+	maxNoteDuration: number = 0,
 ): PlaybackNote[] {
 	const BUFFER_SECONDS = 0.5;
 	const viewportStartSeconds = Math.max(
@@ -35,13 +74,24 @@ export function calculateVisibleNotes(
 		currentTime +
 		(viewportWidth - HIT_LINE_X) / PIXELS_PER_SECOND +
 		BUFFER_SECONDS;
+	const searchStartSeconds = Math.max(
+		0,
+		viewportStartSeconds - maxNoteDuration,
+	);
+	const startIndex = findFirstNoteStartingAtOrAfter(notes, searchStartSeconds);
+	const endIndex = findFirstNoteStartingAfter(notes, viewportEndSeconds);
+	const visibleNotes: PlaybackNote[] = [];
 
-	return notes.filter((note) => {
+	for (let index = startIndex; index < endIndex; index++) {
+		const note = notes[index];
 		const noteEndTime = note.startTime + note.duration;
-		// Note is visible if it starts before viewport ends AND ends after viewport starts
-		return (
+		if (
 			note.startTime <= viewportEndSeconds &&
 			noteEndTime >= viewportStartSeconds
-		);
-	});
+		) {
+			visibleNotes.push(note);
+		}
+	}
+
+	return visibleNotes;
 }

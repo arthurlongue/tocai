@@ -9,7 +9,9 @@ export const locators = (page: Page) => ({
 	visualizerCanvas: page.locator(".visualizer canvas"),
 	title: page.locator("h1"),
 	songTitle: page.locator("h2").first(),
-	metadata: page.locator(".w-full.max-w-md.mx-auto p.text-lg.text-muted-foreground"),
+	metadata: page.locator(
+		".w-full.max-w-md.mx-auto p.text-lg.text-muted-foreground",
+	),
 	duration: page.getByText(/duration/i),
 	tracks: page.getByText(/tracks/i),
 	playButton: page.getByRole("button", { name: /play/i }),
