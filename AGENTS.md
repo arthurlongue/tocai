@@ -47,7 +47,12 @@ The project follows **Clean Architecture** principles to maintain strict module 
 
 **PROACTIVELY use subagents to keep the main context window focused.** Offload context-heavy work to a subagent, especially file exploration, multi-file searches, test runs, and multi-step CLI commands.
 
-Use `Explore` for codebase reading/searching and `runSubagent` for commands or tests that would produce noisy output. Ask for concise summaries, and prefer parallel subagents when the tasks are independent.
+Use `Explore` for codebase reading/searching and `runSubagent` for commands or tests that would produce noisy output. Ask for concise summaries, and prefer parallel subagents when the tasks are independent. For example:
+
+- When investigating a bug, use `Explore` to read relevant files and return a summary of how they work together.
+- When running tests, use `runSubagent` to execute the test command and return a pass/fail summary with key logs, rather than dumping all test output into the main context.
+
+This keeps the main assistant thread focused on high-level reasoning and decision-making, while still leveraging tools for deep dives and noisy outputs.
 
 ## Directory Overview
 - `docs/ai-specs/`: Comprehensive design documents (Requirements, Architecture, Audio/Parsing, UI/Canvas).
@@ -85,7 +90,7 @@ Update `.agents/CONTINUITY.md` only when there is a meaningful delta in:
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **tocai** (428 symbols, 885 relationships, 21 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **tocai** (400 symbols, 1021 relationships, 29 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

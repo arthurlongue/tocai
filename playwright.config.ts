@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const DEFAULT_WORKERS = 9;
+const DEFAULT_WORKERS = 5;
 const BASE_URL = "http://localhost:5173";
 const DEV_SERVER_PORT = 5173;
 

@@ -104,7 +104,7 @@ export const Visualizer: React.FC<VisualizerProps> = ({
 
 	return (
 		<div
-			className="relative w-full bg-slate-900 border-y border-slate-700 overflow-hidden visualizer"
+			className="relative w-full bg-slate-900 overflow-hidden visualizer"
 			style={{ height: "500px" }}
 		>
 			<canvas ref={canvasRef} className="w-full h-full block" />

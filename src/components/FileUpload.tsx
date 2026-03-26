@@ -2,17 +2,19 @@ import type React from "react";
 import { useState } from "react";
 import type { Song } from "../domain/types";
 import { parseFile } from "../services/parser";
-import { saveFile } from "../services/storage";
+import { saveFile, saveSong, setCurrentSong } from "../services/storage";
 import { Input } from "./ui/input";
 
 interface FileUploadProps {
-	onSongLoaded: (song: Song) => void;
+	onSongLoaded: (song: Song, name: string) => void;
 	onError?: (error: Error) => void;
+	onSongSaved?: () => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
 	onSongLoaded,
 	onError,
+	onSongSaved,
 }) => {
 	const [isParsing, setIsParsing] = useState(false);
 
@@ -25,10 +27,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 		setIsParsing(true);
 		try {
 			const song = await parseFile(file);
-			onSongLoaded(song);
-			void saveFile(file.name, file).catch((err) => {
-				console.error("Error saving uploaded file:", err);
-			});
+			onSongLoaded(song, file.name);
+			await saveSong(file.name, song);
+			await saveFile(file.name, file);
+			await setCurrentSong(file.name);
+			onSongSaved?.();
 		} catch (err) {
 			console.error("Error handling file:", err);
 			if (onError) {

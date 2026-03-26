@@ -5,7 +5,12 @@
 import type { Transport } from "tone";
 import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HIT_LINE_X, NOTE_RADIUS, STRING_COUNT } from "./constants";
+import {
+	HIT_LINE_X,
+	NOTE_HEIGHT,
+	STRING_COLORS,
+	STRING_COUNT,
+} from "./constants";
 import {
 	resetPlaybackTimelineState,
 	setPlaybackTimelineSpeed,
@@ -28,13 +33,40 @@ vi.mock("tone", () => ({
 describe("Renderer", () => {
 	let canvas: HTMLCanvasElement;
 	let mockCtx: any;
+	let fillStyleHistory: string[];
+	let fontHistory: string[];
+	let textAlignHistory: string[];
+	let textBaselineHistory: string[];
+	let shadowColorHistory: string[];
+	let shadowBlurHistory: number[];
+
+	const getNoteFillTextCalls = () =>
+		mockCtx.fillText.mock.calls.filter(
+			([text]: [unknown]) => !String(text).endsWith(" FPS"),
+		);
+
+	const getHitLineMoveToCalls = () =>
+		mockCtx.moveTo.mock.calls.filter(
+			([x, y]: [number, number]) => x === HIT_LINE_X && y === 0,
+		);
+
+	const getHitLineLineToCalls = () =>
+		mockCtx.lineTo.mock.calls.filter(
+			([x, y]: [number, number]) => x === HIT_LINE_X && y === canvas.height,
+		);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		resetPlaybackTimelineState();
+		fillStyleHistory = [];
+		fontHistory = [];
+		textAlignHistory = [];
+		textBaselineHistory = [];
+		shadowColorHistory = [];
+		shadowBlurHistory = [];
 		vi.mocked(Tone.getTransport).mockReturnValue({
 			seconds: 0,
-		} as unknown as Transport);
+		} as unknown as typeof Transport);
 		vi.mocked(Tone.getContext).mockReturnValue({
 			rawContext: {
 				outputLatency: 0,
@@ -47,6 +79,15 @@ describe("Renderer", () => {
 		canvas.width = 800;
 		canvas.height = 600;
 
+		let fillStyle = "";
+		let strokeStyle = "";
+		let lineWidth = 0;
+		let font = "";
+		let textAlign = "";
+		let textBaseline = "";
+		let shadowColor = "";
+		let shadowBlur = 0;
+
 		// Mock canvas context with spies
 		mockCtx = {
 			clearRect: vi.fn(),
@@ -57,13 +98,71 @@ describe("Renderer", () => {
 			fill: vi.fn(),
 			arc: vi.fn(),
 			fillText: vi.fn(),
-			strokeStyle: "",
-			fillStyle: "",
-			lineWidth: 0,
-			font: "",
-			textAlign: "",
-			textBaseline: "",
+			strokeText: vi.fn(),
+			createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+			roundRect: vi.fn(),
+			fillRect: vi.fn(),
+			setTransform: vi.fn(),
+			save: vi.fn(),
+			restore: vi.fn(),
 		};
+
+		Object.defineProperties(mockCtx, {
+			strokeStyle: {
+				get: () => strokeStyle,
+				set: (value: string) => {
+					strokeStyle = value;
+				},
+			},
+			fillStyle: {
+				get: () => fillStyle,
+				set: (value: string) => {
+					fillStyle = value;
+					fillStyleHistory.push(value);
+				},
+			},
+			lineWidth: {
+				get: () => lineWidth,
+				set: (value: number) => {
+					lineWidth = value;
+				},
+			},
+			font: {
+				get: () => font,
+				set: (value: string) => {
+					font = value;
+					fontHistory.push(value);
+				},
+			},
+			textAlign: {
+				get: () => textAlign,
+				set: (value: string) => {
+					textAlign = value;
+					textAlignHistory.push(value);
+				},
+			},
+			textBaseline: {
+				get: () => textBaseline,
+				set: (value: string) => {
+					textBaseline = value;
+					textBaselineHistory.push(value);
+				},
+			},
+			shadowColor: {
+				get: () => shadowColor,
+				set: (value: string) => {
+					shadowColor = value;
+					shadowColorHistory.push(value);
+				},
+			},
+			shadowBlur: {
+				get: () => shadowBlur,
+				set: (value: number) => {
+					shadowBlur = value;
+					shadowBlurHistory.push(value);
+				},
+			},
+		});
 
 		vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as any);
 	});
@@ -106,13 +205,13 @@ describe("Renderer", () => {
 		// No easy way to check private property, but it shouldn't throw
 	});
 
-	it("calls clearRect on each draw", () => {
+	it("fills the background on each draw", () => {
 		const renderer = new Renderer(canvas);
-		const clearRectSpy = vi.spyOn(mockCtx, "clearRect");
+		const fillRectSpy = vi.spyOn(mockCtx, "fillRect");
 
 		renderer.draw();
 
-		expect(clearRectSpy).toHaveBeenCalled();
+		expect(fillRectSpy).toHaveBeenCalled();
 	});
 
 	describe("VISUAL-01: Horizontal scrolling animation", () => {
@@ -142,8 +241,8 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			renderer.draw();
 
-			// Verify arc was called (note drawn) - position calculated from getNoteX
-			expect(mockCtx.arc).toHaveBeenCalled();
+			// Verify text was drawn for the visible note.
+			expect(mockCtx.fillText).toHaveBeenCalled();
 
 			// At time 2.0, note should be near HIT_LINE_X (100)
 			// Note: The renderer adds a small latency compensation (0.05), so the actual
@@ -151,21 +250,20 @@ describe("Renderer", () => {
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 2.0,
 			} as unknown as Transport);
-			mockCtx.arc.mockClear();
+			mockCtx.fillText.mockClear();
 			renderer.draw();
 
 			// The note should be drawn near HIT_LINE_X when currentTime matches startTime
-			const arcCalls = mockCtx.arc.mock.calls;
-			expect(arcCalls.length).toBeGreaterThan(0);
-			// First argument is x coordinate
-			const noteX = arcCalls[0][0] as number;
+			const fillTextCalls = mockCtx.fillText.mock.calls;
+			expect(fillTextCalls.length).toBeGreaterThan(0);
+			const noteX = fillTextCalls[0][1] as number;
 			// Expected: HIT_LINE_X + 0.05 * PIXELS_PER_SECOND = 100 + 10 = 110
 			expect(noteX).toBeCloseTo(110, 0);
 		});
 	});
 
-	describe("VISUAL-02: Dynamic lane rendering", () => {
-		it("renders dynamic lanes based on track tuning", () => {
+	describe("VISUAL-02: Canvas overlay rendering", () => {
+		it("draws only the hit-line overlay on top of the background", () => {
 			const mockTrackWithTuning = {
 				id: "1",
 				name: "Standard Tuning",
@@ -177,38 +275,21 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrackWithTuning as any);
 			renderer.draw();
 
-			// Should draw STRING_COUNT horizontal lines for lanes TWICE (before and after notes)
-			// plus 1 for hit-line
-			// Total: STRING_COUNT * 2 + 1 = 13 calls
-			expect(mockCtx.moveTo).toHaveBeenCalledTimes(STRING_COUNT * 2 + 1);
-			expect(mockCtx.lineTo).toHaveBeenCalledTimes(STRING_COUNT * 2 + 1);
-
-			// Verify Y positions are calculated correctly for each string lane (first set)
-			const laneHeight = 600 / STRING_COUNT; // height / STRING_COUNT
-			const moveToCalls = mockCtx.moveTo.mock.calls;
-
-			for (let i = 0; i < STRING_COUNT; i++) {
-				const expectedY = i * laneHeight + laneHeight / 2;
-				// moveTo is called with (0, y) for each lane
-				expect(moveToCalls[i][1]).toBeCloseTo(expectedY, 0);
-			}
+			expect(getHitLineMoveToCalls()).toHaveLength(1);
+			expect(getHitLineLineToCalls()).toHaveLength(1);
+			expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 0, 800, 600);
 		});
 
-		it("renders lanes at correct vertical positions", () => {
+		it("draws the hit-line vertically across the full canvas height", () => {
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			// Verify string lanes are drawn as horizontal lines
-			const lineToCalls = mockCtx.lineTo.mock.calls;
-			for (let i = 0; i < STRING_COUNT; i++) {
-				// Each line should span the full width (0 to width)
-				expect(lineToCalls[i][0]).toBe(800); // width
-			}
+			expect(getHitLineLineToCalls()).toContainEqual([HIT_LINE_X, 600]);
 		});
 	});
 
 	describe("VISUAL-03: Fret number rendering", () => {
-		it("draws fret numbers inside note circles", () => {
+		it("draws one label per note", () => {
 			const mockTrack = {
 				id: "1",
 				name: "Test",
@@ -237,21 +318,20 @@ describe("Renderer", () => {
 			renderer.setTrack(mockTrack as any);
 			renderer.draw();
 
-			// fillText should be called for each note's fret number
-			expect(mockCtx.fillText).toHaveBeenCalledTimes(2);
+			const noteFillTextCalls = getNoteFillTextCalls();
+			expect(noteFillTextCalls).toHaveLength(2);
+			expect(mockCtx.strokeText).toHaveBeenCalledTimes(2);
+			expect(noteFillTextCalls[0][0]).toBe("7");
+			expect(noteFillTextCalls[1][0]).toBe("5");
 
-			// Verify fillText is called with the correct fret numbers as strings
-			const fillTextCalls = mockCtx.fillText.mock.calls;
-			expect(fillTextCalls[0][0]).toBe("7"); // First note fret
-			expect(fillTextCalls[1][0]).toBe("5"); // Second note fret
-
-			// Verify text styling for fret numbers
-			expect(mockCtx.font).toBe("bold 12px sans-serif");
-			expect(mockCtx.textAlign).toBe("center");
-			expect(mockCtx.textBaseline).toBe("middle");
+			expect(fontHistory).toContain(
+				`900 ${Math.round(NOTE_HEIGHT * 1.2)}px 'Inter', system-ui, sans-serif`,
+			);
+			expect(textAlignHistory).toContain("center");
+			expect(textBaselineHistory).toContain("middle");
 		});
 
-		it("positions fret numbers at the center of note circles", () => {
+		it("positions fret numbers at the center of strings", () => {
 			const mockTrack = {
 				id: "1",
 				name: "Test",
@@ -277,17 +357,14 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			renderer.draw();
 
-			// Get the arc call to find note center
-			const arcCall = mockCtx.arc.mock.calls[0];
-			const noteCenterX = arcCall[0] as number;
-			const noteCenterY = arcCall[1] as number;
+			const fillCall = mockCtx.fillText.mock.calls[0];
+			const noteCenterX = fillCall[1] as number;
+			const noteCenterY = fillCall[2] as number;
 
-			// Get the fillText call for fret number
 			const fillTextCall = mockCtx.fillText.mock.calls[0];
 			const textX = fillTextCall[1] as number;
 			const textY = fillTextCall[2] as number;
 
-			// Fret number should be centered in the circle
 			expect(textX).toBeCloseTo(noteCenterX, 0);
 			expect(textY).toBeCloseTo(noteCenterY, 0);
 		});
@@ -299,13 +376,8 @@ describe("Renderer", () => {
 			renderer.draw();
 
 			// The hit-line is drawn between the two sets of string lanes
-			// First set: lanes 0-5 (6 calls), then hit-line (call 6), then second set: lanes 0-5 (calls 7-12)
-			const moveToCalls = mockCtx.moveTo.mock.calls;
-			const lineToCalls = mockCtx.lineTo.mock.calls;
-
-			// Find the hit-line call - it should be at index STRING_COUNT (after first set of lanes)
-			const hitLineMoveTo = moveToCalls[STRING_COUNT];
-			const hitLineLineTo = lineToCalls[STRING_COUNT];
+			const hitLineMoveTo = getHitLineMoveToCalls()[0];
+			const hitLineLineTo = getHitLineLineToCalls()[0];
 
 			expect(hitLineMoveTo[0]).toBe(HIT_LINE_X);
 			expect(hitLineMoveTo[1]).toBe(0);
@@ -317,12 +389,8 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			const moveToCalls = mockCtx.moveTo.mock.calls;
-			const lineToCalls = mockCtx.lineTo.mock.calls;
-
-			// Find the hit-line call (at index STRING_COUNT, between the two lane sets)
-			const hitLineMoveTo = moveToCalls[STRING_COUNT];
-			const hitLineLineTo = lineToCalls[STRING_COUNT];
+			const hitLineMoveTo = getHitLineMoveToCalls()[0];
+			const hitLineLineTo = getHitLineLineToCalls()[0];
 
 			expect(hitLineMoveTo).toBeDefined();
 			expect(hitLineLineTo).toBeDefined();
@@ -403,14 +471,14 @@ describe("Renderer", () => {
 			setPlaybackTimelineSpeed(1, 2.0);
 			renderer.setSpeed(1);
 			renderer.draw();
-			const baselineX = mockCtx.arc.mock.calls[0]?.[0] as number;
+			const baselineX = mockCtx.fillText.mock.calls[0]?.[1] as number;
 
-			mockCtx.arc.mockClear();
+			mockCtx.fillText.mockClear();
 
 			setPlaybackTimelineSpeed(0.5, 2.0);
 			renderer.setSpeed(0.5);
 			renderer.draw();
-			const slowedX = mockCtx.arc.mock.calls[0]?.[0] as number;
+			const slowedX = mockCtx.fillText.mock.calls[0]?.[1] as number;
 
 			expect(baselineX).toBeDefined();
 			expect(slowedX).toBeDefined();
@@ -442,16 +510,16 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			setPlaybackTimelineSpeed(1, 2.0);
 			renderer.draw();
-			const baselineX = mockCtx.arc.mock.calls[0]?.[0] as number;
+			const baselineX = mockCtx.fillText.mock.calls[0]?.[1] as number;
 
-			mockCtx.arc.mockClear();
+			mockCtx.fillText.mockClear();
 
 			setPlaybackTimelineSpeed(0.5, 2.0);
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 3.0,
 			} as unknown as Transport);
 			renderer.draw();
-			const slowedLaterX = mockCtx.arc.mock.calls[0]?.[0] as number;
+			const slowedLaterX = mockCtx.fillText.mock.calls[0]?.[1] as number;
 
 			expect(baselineX).toBeDefined();
 			expect(slowedLaterX).toBeDefined();
@@ -460,7 +528,7 @@ describe("Renderer", () => {
 	});
 
 	describe("Note visualization", () => {
-		it("draws notes with correct string colors", () => {
+		it("draws fret labels with correct string colors", () => {
 			const mockTrack = {
 				id: "1",
 				name: "Test",
@@ -494,11 +562,13 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			renderer.draw();
 
-			// fill should be called for each note (2 notes)
-			expect(mockCtx.fill).toHaveBeenCalledTimes(2);
+			const noteFillTextCalls = getNoteFillTextCalls();
+			expect(noteFillTextCalls).toHaveLength(2);
+			expect(fillStyleHistory).toContain(STRING_COLORS[0]);
+			expect(fillStyleHistory).toContain(STRING_COLORS[3]);
 		});
 
-		it("draws note circles with correct radius", () => {
+		it("draws fret numbers with the string-color glow", () => {
 			const mockTrack = {
 				id: "1",
 				name: "Test",
@@ -524,12 +594,12 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			renderer.draw();
 
-			// arc should be called with NOTE_RADIUS as the radius
-			const arcCall = mockCtx.arc.mock.calls[0];
-			expect(arcCall[2]).toBe(NOTE_RADIUS);
+			expect(shadowColorHistory).toContain(STRING_COLORS[0]);
+			expect(shadowBlurHistory).toContain(6);
+			expect(mockCtx.shadowBlur).toBe(0);
 		});
 
-		it("draws white border around notes", () => {
+		it("draws outlined text instead of a bordered note body", () => {
 			const mockTrack = {
 				id: "1",
 				name: "Test",
@@ -555,8 +625,12 @@ describe("Renderer", () => {
 			} as unknown as Transport);
 			renderer.draw();
 
-			// stroke should be called (hit-line + note borders)
-			expect(mockCtx.stroke).toHaveBeenCalled();
+			expect(mockCtx.stroke).toHaveBeenCalledTimes(STRING_COUNT + 2);
+			expect(mockCtx.strokeText).toHaveBeenCalledWith(
+				"5",
+				expect.any(Number),
+				expect.any(Number),
+			);
 		});
 	});
 });

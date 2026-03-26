@@ -10,6 +10,9 @@
 	
 	--color-card: var(--surface);
 	--color-card-foreground: var(--text-main);
+
+	--color-popover: var(--surface-elevated);
+	--color-popover-foreground: var(--text-main);
 	
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);

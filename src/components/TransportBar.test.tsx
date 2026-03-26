@@ -1,6 +1,18 @@
-import { act, render, screen } from "@testing-library/react";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Track } from "../domain/types";
+import {
+	act,
+	cleanup,
+	render,
+	screen,
+} from "@testing-library/react";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { syncVisualState } from "../engine/visualSync";
 import { TransportBar } from "./TransportBar";
@@ -75,14 +87,11 @@ vi.mock("tone", async () => {
 	};
 });
 
-const mockTrack: Track = {
-	name: "Guitar",
-	instrument: "guitar",
-	tuning: [82, 87, 92, 97, 101, 106],
-	notes: [],
-};
-
 describe("TransportBar", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+	});
 	beforeEach(() => {
 		mockTransportStatus = "stopped";
 		vi.clearAllMocks();
@@ -94,7 +103,8 @@ describe("TransportBar", () => {
 				songDuration={240}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
@@ -108,11 +118,11 @@ describe("TransportBar", () => {
 				songDuration={125}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
-		// Should show "2:05" for 125 seconds
 		const timeElements = screen.getAllByText(/2:05/);
 		expect(timeElements.length).toBeGreaterThan(0);
 	});
@@ -125,7 +135,8 @@ describe("TransportBar", () => {
 				songDuration={240}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
@@ -139,26 +150,13 @@ describe("TransportBar", () => {
 				songDuration={300}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
 		const sliders = screen.getAllByRole("slider");
 		expect(sliders.length).toBeGreaterThan(0);
-	});
-
-	it("renders with track info", () => {
-		render(
-			<TransportBar
-				songDuration={240}
-				speed={1}
-				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
-			/>,
-		);
-
-		const trackElements = screen.getAllByText("Guitar");
-		expect(trackElements.length).toBeGreaterThan(0);
 	});
 
 	it("polls playback time only while started", () => {
@@ -169,7 +167,8 @@ describe("TransportBar", () => {
 				songDuration={240}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
@@ -186,7 +185,8 @@ describe("TransportBar", () => {
 				songDuration={240}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
@@ -205,7 +205,8 @@ describe("TransportBar", () => {
 				songDuration={240}
 				speed={1}
 				onSpeedChange={vi.fn()}
-				currentTrack={mockTrack}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
 			/>,
 		);
 
@@ -214,5 +215,21 @@ describe("TransportBar", () => {
 		});
 
 		expect(screen.getAllByText(/0:12/).length).toBeGreaterThan(0);
+	});
+
+	it("renders a selected-track volume slider", () => {
+		render(
+			<TransportBar
+				songDuration={240}
+				speed={1}
+				onSpeedChange={vi.fn()}
+				selectedTrackVolume={0.8}
+				onSelectedTrackVolumeChange={vi.fn()}
+			/>,
+		);
+
+		expect(
+			screen.getAllByLabelText("Selected Track Volume").length,
+		).toBeGreaterThan(0);
 	});
 });

@@ -27,6 +27,7 @@ export interface Measure {
 }
 
 export interface PlaybackNote {
+	trackId: string; // ID of the track this note belongs to
 	pitch: number; // MIDI note number
 	startTime: number; // Seconds from start
 	duration: number; // Seconds

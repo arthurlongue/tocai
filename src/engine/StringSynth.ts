@@ -1,4 +1,4 @@
-import { Synth } from "tone";
+import { Synth, type Volume } from "tone";
 import { DEFAULT_SYNTH_SETTINGS, STRING_COUNT } from "./constants";
 
 export class StringSynth {
@@ -38,9 +38,20 @@ export class StringSynth {
 	}
 
 	/**
-	 * Connect all synths to the destination (master output)
+	 * Connect all synths to a Tone node (e.g. a Volume node for per-track routing).
 	 */
-	toDestination() {
+	connect(node: Volume): this {
+		for (const synth of this.synths) {
+			synth.connect(node);
+		}
+		return this;
+	}
+
+	/**
+	 * Connect all synths to the destination (master output).
+	 * Kept for backwards compatibility.
+	 */
+	toDestination(): this {
 		for (const synth of this.synths) {
 			synth.toDestination();
 		}

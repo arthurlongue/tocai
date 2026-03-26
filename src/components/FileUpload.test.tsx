@@ -2,7 +2,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Song } from "../domain/types";
 import { parseFile } from "../services/parser";
-import { saveFile } from "../services/storage";
+import { saveFile, saveSong } from "../services/storage";
 import { FileUpload } from "./FileUpload";
 
 vi.mock("../services/parser", () => ({
@@ -10,7 +10,9 @@ vi.mock("../services/parser", () => ({
 }));
 
 vi.mock("../services/storage", () => ({
-	saveFile: vi.fn(),
+	saveFile: vi.fn(() => Promise.resolve()),
+	saveSong: vi.fn(() => Promise.resolve()),
+	setCurrentSong: vi.fn(() => Promise.resolve()),
 }));
 
 const mockSong: Song = {
@@ -39,7 +41,7 @@ describe("FileUpload", () => {
 			eventOrder.push("parse");
 			return mockSong;
 		});
-		vi.mocked(saveFile).mockImplementation(async () => {
+		vi.mocked(saveSong).mockImplementation(async () => {
 			eventOrder.push("save");
 		});
 
@@ -55,12 +57,12 @@ describe("FileUpload", () => {
 		});
 
 		await waitFor(() => {
-			expect(onSongLoaded).toHaveBeenCalledWith(mockSong);
+			expect(onSongLoaded).toHaveBeenCalledWith(mockSong, file.name);
 		});
 
 		expect(onError).not.toHaveBeenCalled();
 		expect(eventOrder).toEqual(["parse", "save"]);
-		expect(saveFile).toHaveBeenCalledWith(file.name, file);
+		expect(saveSong).toHaveBeenCalledWith(file.name, mockSong);
 	});
 
 	it("surfaces parse failures without trying to persist", async () => {
@@ -87,6 +89,7 @@ describe("FileUpload", () => {
 		});
 
 		expect(onSongLoaded).not.toHaveBeenCalled();
+		expect(saveSong).not.toHaveBeenCalled();
 		expect(saveFile).not.toHaveBeenCalled();
 	});
 });

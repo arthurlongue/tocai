@@ -16,11 +16,18 @@ const mockCtx = {
 	restore: vi.fn(),
 	drawImage: vi.fn(),
 	fillText: vi.fn(),
-	set fillStyle(_val: string) {},
+	roundRect: vi.fn(),
+	createLinearGradient: vi.fn(() => ({
+		addColorStop: vi.fn(),
+	})),
+	set fillStyle(_val: string | CanvasGradient) {},
 	set strokeStyle(_val: string) {},
 	set lineWidth(_val: number) {},
 	set font(_val: string) {},
 	set textAlign(_val: CanvasTextAlign) {},
+	set globalAlpha(_val: number) {},
+	shadowBlur: 0,
+	shadowColor: "",
 };
 
 describe("MinimapRenderer", () => {
@@ -63,6 +70,7 @@ describe("MinimapRenderer", () => {
 		tuning: [82, 87, 92, 97, 101, 106],
 		notes: [
 			{
+				trackId: "test-track",
 				pitch: 82,
 				startTime: 0,
 				duration: 1,
@@ -71,6 +79,7 @@ describe("MinimapRenderer", () => {
 				techniques: {},
 			},
 			{
+				trackId: "test-track",
 				pitch: 87,
 				startTime: 2,
 				duration: 1,
@@ -79,6 +88,7 @@ describe("MinimapRenderer", () => {
 				techniques: {},
 			},
 			{
+				trackId: "test-track",
 				pitch: 92,
 				startTime: 4,
 				duration: 1,

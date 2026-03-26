@@ -63,6 +63,7 @@ export function flattenSong(tabSong: TabSong): Song {
 						}
 
 						const playbackNote: PlaybackNote = {
+							trackId: String(tabTrack.id),
 							pitch,
 							startTime: currentTime,
 							duration,
