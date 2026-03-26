@@ -13,6 +13,9 @@
 
 ## [OUTCOMES]
 
+- 2026-03-26T19:01Z [TOOL] Cleaned up unit test suite: deleted useless `theme.test.ts` (self-referencing strings); pruned 7 redundant tests from `Renderer.test.ts`, `layout.test.ts`, and `Minimap.test.tsx`. Suite reduced from 113 to 101 tests across 18 files. All tests passing.
+- 2026-03-26T18:58Z [TOOL] Consolidated E2E tests: reduced 12 tests to 7 by removing redundancies in `smoke.spec.ts` and `minimap.spec.ts`; deleted brittle `responsive.spec.ts`. Updated `helpers.ts` locators for metadata and volume. All 7 tests passing.
+- 2026-03-26T18:43Z [TOOL] Improved text and icon contrast: shifted `--muted-foreground` to `#fafafa` (Zinc-50); updated TrackMixer, TransportBar, Library, and App to use white or accent colors for icons and secondary text. All 21 component tests passed.
 - 2026-03-26T16:02Z [TOOL] Fixed regressions: App now restores `resetSpeed()` + `engine.reset()` on song load/clear/delete; TrackMixer mute labels unique via track index; storage uses clone-on-write mock crossing serialization boundary. 19 files, 113 tests.
 - 2026-03-26T15:33Z [TOOL] Partial fix: App removed `resetSpeed()` entirely; only `AudioEngine.reset()` resets Tone transport. TrackMixer labels still name-based. Storage fixture mocks `Map<string, any>`.
 - 2026-03-26T01:06Z [TOOL] Fixed stale renderer canvas assertions in `Renderer.test.ts` (18 files, 107 tests).
