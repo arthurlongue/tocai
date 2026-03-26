@@ -1,10 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-	loadSong,
-	locators,
-	pausePlayback,
-	startPlayback,
-} from "./helpers";
+import { loadSong, locators, pausePlayback, startPlayback } from "./helpers";
 
 test.describe("Transport Bar Controls", () => {
 	test.beforeEach(async ({ page }) => {
