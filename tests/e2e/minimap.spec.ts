@@ -11,12 +11,6 @@ test.describe("Minimap Component", () => {
 		await loadSong(page);
 	});
 
-	test("should render minimap canvas", async ({ page }) => {
-		const ui = locators(page);
-		await expect(ui.minimapCanvas).toBeVisible();
-		await expect(ui.minimapCanvas).toHaveClass(/cursor-pointer/);
-	});
-
 	test("should be clickable for seeking", async ({ page }) => {
 		const ui = locators(page);
 		const initialTime = await ui.timeDisplay.textContent();

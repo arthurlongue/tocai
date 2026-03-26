@@ -9,18 +9,16 @@ export const locators = (page: Page) => ({
 	visualizerCanvas: page.locator(".visualizer canvas"),
 	title: page.locator("h1"),
 	songTitle: page.locator("h2").first(),
-	metadata: page.locator(
-		".w-full.max-w-md.mx-auto p.text-lg.text-muted-foreground",
-	),
+	metadata: page.locator(".w-full.max-w-2xl.mx-auto p.text-sm").first(),
 	duration: page.getByText(/duration/i),
-	tracks: page.locator(".w-full.max-w-md.mx-auto").getByText(/tracks/i),
+	tracks: page.locator(".w-full.max-w-2xl.mx-auto").getByText(/tracks/i),
 	playButton: page.getByRole("button", { name: /play/i }),
 	pauseButton: page.getByRole("button", { name: /pause/i }),
 	stopButton: page.getByRole("button", { name: /stop/i }),
 	seekSlider: page.getByRole("slider", { name: /seek/i }),
 	speedSlider: page.getByRole("slider", { name: /speed/i }),
-	volumeSlider: page.locator(".transport-bar").getByRole("slider", { name: /volume/i }),
-	timeDisplay: page.getByText(/\d:\d{2} \/ \d:\d{2}/),
+	volumeSlider: page.getByRole("slider", { name: /selected track volume/i }),
+	timeDisplay: page.getByText(/\d{1,2}:\d{2} \/ \d{1,2}:\d{2}/),
 	uploadAnother: page.getByRole("button", { name: /upload another/i }),
 });
 

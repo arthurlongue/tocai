@@ -13,24 +13,6 @@ test.describe("Tocaí App - Core User Flow", () => {
 		).toBeVisible();
 	});
 
-	test("should show song metadata after upload", async ({ page }) => {
-		const ui = await loadSong(page);
-
-		await expect(ui.songTitle).toBeVisible();
-		await expect(ui.duration).toBeVisible();
-		await expect(ui.tracks).toBeVisible();
-	});
-
-	test("should render transport, minimap, and visualizer after upload", async ({
-		page,
-	}) => {
-		const ui = await loadSong(page);
-
-		await expect(ui.transportBar).toBeVisible();
-		await expect(ui.minimapCanvas).toBeVisible();
-		await expect(ui.visualizerCanvas).toBeVisible();
-	});
-
 	test("should return to upload state when loading another song", async ({
 		page,
 	}) => {

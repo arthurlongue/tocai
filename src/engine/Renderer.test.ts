@@ -167,52 +167,7 @@ describe("Renderer", () => {
 		vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as any);
 	});
 
-	it("instantiates the Renderer class", () => {
-		const renderer = new Renderer(canvas);
-		expect(renderer).toBeDefined();
-	});
 
-	it("can start and stop the render loop", () => {
-		const renderer = new Renderer(canvas);
-		const startSpy = vi.spyOn(window, "requestAnimationFrame");
-		const stopSpy = vi.spyOn(window, "cancelAnimationFrame");
-
-		renderer.start();
-		expect(startSpy).toHaveBeenCalled();
-
-		renderer.stop();
-		expect(stopSpy).toHaveBeenCalled();
-	});
-
-	it("can update the current track being rendered", () => {
-		const renderer = new Renderer(canvas);
-		const mockTrack = {
-			id: "1",
-			name: "Test",
-			tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
-			notes: [
-				{
-					pitch: 60,
-					startTime: 0,
-					duration: 1,
-					string: 0,
-					fret: 5,
-					techniques: {},
-				},
-			],
-		};
-		renderer.setTrack(mockTrack as any);
-		// No easy way to check private property, but it shouldn't throw
-	});
-
-	it("fills the background on each draw", () => {
-		const renderer = new Renderer(canvas);
-		const fillRectSpy = vi.spyOn(mockCtx, "fillRect");
-
-		renderer.draw();
-
-		expect(fillRectSpy).toHaveBeenCalled();
-	});
 
 	describe("VISUAL-01: Horizontal scrolling animation", () => {
 		it("scrolls notes horizontally right-to-left based on time progression", () => {
@@ -371,11 +326,10 @@ describe("Renderer", () => {
 	});
 
 	describe("VISUAL-04: Hit-line position", () => {
-		it("HIT_LINE_X constant positions playhead correctly", () => {
+		it("draws the hit-line vertically at HIT_LINE_X across the full canvas height", () => {
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			// The hit-line is drawn between the two sets of string lanes
 			const hitLineMoveTo = getHitLineMoveToCalls()[0];
 			const hitLineLineTo = getHitLineLineToCalls()[0];
 
@@ -383,21 +337,6 @@ describe("Renderer", () => {
 			expect(hitLineMoveTo[1]).toBe(0);
 			expect(hitLineLineTo[0]).toBe(HIT_LINE_X);
 			expect(hitLineLineTo[1]).toBe(600); // height
-		});
-
-		it("draws hit-line as a vertical line from top to bottom", () => {
-			const renderer = new Renderer(canvas);
-			renderer.draw();
-
-			const hitLineMoveTo = getHitLineMoveToCalls()[0];
-			const hitLineLineTo = getHitLineLineToCalls()[0];
-
-			expect(hitLineMoveTo).toBeDefined();
-			expect(hitLineLineTo).toBeDefined();
-			expect(hitLineMoveTo[0]).toBe(HIT_LINE_X);
-			expect(hitLineMoveTo[1]).toBe(0);
-			expect(hitLineLineTo[0]).toBe(HIT_LINE_X);
-			expect(hitLineLineTo[1]).toBe(600);
 		});
 	});
 

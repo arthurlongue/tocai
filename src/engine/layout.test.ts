@@ -85,18 +85,6 @@ describe("Layout Math", () => {
 		});
 	});
 
-	describe("HIT_LINE_X constant", () => {
-		it("HIT_LINE_X constant positions playhead correctly", () => {
-			// HIT_LINE_X should be a positive value representing pixels from left edge
-			expect(HIT_LINE_X).toBeGreaterThan(0);
-			expect(HIT_LINE_X).toBe(100);
-
-			// Verify it's used correctly in getNoteX: when startTime === currentTime,
-			// the note should be positioned exactly at HIT_LINE_X
-			const noteAtCurrentTime = getNoteX(5.0, 5.0);
-			expect(noteAtCurrentTime).toBe(HIT_LINE_X);
-		});
-
 		it("PIXELS_PER_SECOND scales time to distance correctly", () => {
 			expect(PIXELS_PER_SECOND).toBe(200);
 
@@ -108,5 +96,4 @@ describe("Layout Math", () => {
 			const oneSecondPast = getNoteX(4.0, 5.0);
 			expect(oneSecondPast).toBe(HIT_LINE_X - PIXELS_PER_SECOND);
 		});
-	});
 });

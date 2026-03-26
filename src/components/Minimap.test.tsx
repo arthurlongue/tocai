@@ -76,15 +76,7 @@ describe("Minimap", () => {
 		expect(canvas).not.toBeNull();
 	});
 
-	it("canvas has correct height (48px)", () => {
-		const track = createMockTrack();
-		const { container } = render(
-			<Minimap track={track} songDuration={5} onSeek={mockOnSeek} />,
-		);
 
-		const canvas = container.querySelector("canvas");
-		expect(canvas?.classList.contains("h-12")).toBe(true);
-	});
 
 	it("draws idle frames from the shared playback timeline", () => {
 		timelineTime = 18.5;

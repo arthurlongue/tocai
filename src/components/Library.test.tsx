@@ -22,6 +22,8 @@ vi.mock("../services/storage", () => ({
 
 // Mock Lucide icons
 vi.mock("lucide-react", () => ({
+	ChevronDown: () => <div data-testid="chevron-down-icon" />,
+	ChevronUp: () => <div data-testid="chevron-up-icon" />,
 	Music: () => <div data-testid="music-icon" />,
 	Play: () => <div data-testid="play-icon" />,
 	Trash2: () => <div data-testid="trash-icon" />,
