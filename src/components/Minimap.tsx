@@ -141,7 +141,7 @@ export const Minimap: React.FC<MinimapProps> = ({
 	};
 
 	return (
-		<div className="w-full bg-surface border-b border-border minimap-container">
+		<div className="w-full bg-surface shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] minimap-container">
 			<canvas
 				ref={canvasRef}
 				className="w-full h-12 cursor-pointer"

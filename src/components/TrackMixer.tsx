@@ -34,7 +34,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 		<div className="w-full flex flex-col gap-3 p-1">
 			<div className="flex justify-between items-center px-1">
 				<div className="flex items-center gap-4">
-					<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+					<h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
 						Tracks
 					</h3>
 					{!isCollapsed && (
@@ -49,9 +49,9 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 								Solo Mode {soloActive ? "ON" : "OFF"}
 							</Button>
 
-							<div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded-lg border border-border/50">
-								<Volume2 className="size-3 text-muted-foreground" />
-								<span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+							<div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded-lg shadow-sm font-bold">
+								<Volume2 className="size-3 text-primary" />
+								<span className="text-[10px] text-foreground uppercase tracking-tighter">
 									Backing
 								</span>
 								<Slider
@@ -60,8 +60,9 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 									min={0}
 									max={1}
 									step={0.05}
+									variant="triangular"
 									onValueChange={(v) => onBackingTracksVolumeChange(v[0])}
-									className="w-20 h-6"
+									className="w-20 h-8"
 								/>
 							</div>
 						</div>
@@ -70,7 +71,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 				<Button
 					variant="ghost"
 					size="sm"
-					className="h-8 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
+					className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer"
 					onClick={() => setIsCollapsed(!isCollapsed)}
 					aria-expanded={!isCollapsed}
 				>
@@ -100,10 +101,10 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 							<div
 								key={track.id}
 								className={cn(
-									"group relative flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 min-w-[180px] cursor-pointer",
+									"group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-200 min-w-[180px] cursor-pointer",
 									isSelected
-										? "bg-primary/10 border-primary ring-1 ring-primary/30 shadow-[0_0_15px_-3px_rgba(var(--primary),0.2)]"
-										: "bg-card hover:bg-muted/50 border-border hover:border-muted-foreground/30",
+										? "bg-primary/10 shadow-[0_0_0_1px_rgba(168,85,247,0.4),0_0_18px_-2px_rgba(168,85,247,0.25)]"
+										: "bg-card shadow-sm hover:shadow-md hover:bg-muted/50",
 									isMuted && !isSelected && "opacity-60 grayscale-[0.5]",
 								)}
 							>
@@ -131,7 +132,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 										>
 											{track.name}
 										</span>
-										<span className="text-[10px] text-muted-foreground uppercase tracking-tight">
+										<span className="text-[10px] text-foreground/80 uppercase tracking-tight">
 											{isSelected ? "Active" : isMuted ? "Muted" : "Playing"}
 										</span>
 									</div>
@@ -144,7 +145,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 										"size-8 rounded-lg shrink-0",
 										isMuted
 											? "text-destructive hover:text-destructive hover:bg-destructive/10"
-											: "text-muted-foreground hover:text-foreground hover:bg-muted",
+											: "text-foreground hover:text-primary hover:bg-muted",
 										soloActive && "opacity-30 cursor-not-allowed",
 									)}
 									onClick={(e) => {

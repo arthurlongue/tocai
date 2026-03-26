@@ -9,8 +9,11 @@ function Slider({
 	value,
 	min = 0,
 	max = 100,
+	variant = "default",
 	...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
+}: React.ComponentProps<typeof SliderPrimitive.Root> & {
+	variant?: "default" | "triangular";
+}) {
 	const _values = React.useMemo(
 		() =>
 			Array.isArray(value)
@@ -20,6 +23,8 @@ function Slider({
 					: [min, max],
 		[value, defaultValue, min, max],
 	);
+
+	const isTriangular = variant === "triangular";
 
 	return (
 		<SliderPrimitive.Root
@@ -37,8 +42,16 @@ function Slider({
 			<SliderPrimitive.Track
 				data-slot="slider-track"
 				className={cn(
-					"relative grow overflow-hidden rounded-full bg-muted data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5",
+					"relative grow overflow-hidden bg-muted data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5",
+					isTriangular
+						? "data-[orientation=horizontal]:h-3"
+						: "rounded-full data-[orientation=horizontal]:h-1.5",
 				)}
+				style={
+					isTriangular
+						? { clipPath: "polygon(0% 100%, 100% 0%, 100% 100%, 0% 100%)" }
+						: {}
+				}
 			>
 				<SliderPrimitive.Range
 					data-slot="slider-range"
@@ -55,7 +68,10 @@ function Slider({
 					aria-valuemin={min}
 					aria-valuemax={max}
 					aria-valuenow={_values[index]}
-					className="block size-11 shrink-0 rounded-full border-2 border-primary bg-white shadow-sm ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
+					className={cn(
+						"block size-4 shrink-0 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--background))] ring-ring/50 transition-[color,box-shadow] hover:ring-4 hover:ring-primary/30 focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 cursor-pointer",
+						isTriangular && "mt-1", // Shift thumb slightly down to center it on the slanted track if needed
+					)}
 				/>
 			))}
 		</SliderPrimitive.Root>

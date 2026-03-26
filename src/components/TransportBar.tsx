@@ -1,4 +1,4 @@
-import { Music, Pause, Play, Square, Volume2 } from "lucide-react";
+import { Gauge, Pause, Play, Square, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getPlaybackTimelineTime } from "../engine/playbackTimeline";
 import { subscribeToVisualSync } from "../engine/visualSync";
@@ -62,7 +62,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	const isPlaying = transportStatus === "started";
 
 	return (
-		<div className="relative z-40 w-full bg-surface border-t border-border p-4 transport-bar">
+		<div className="relative z-40 w-full bg-surface shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.5)] p-4 transport-bar">
 			<div className="flex flex-wrap items-center gap-4">
 				{/* Playback Controls */}
 				<div className="flex gap-2">
@@ -102,16 +102,16 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 						max={songDuration}
 						step={0.1}
 						onValueChange={handleSeekChange}
-						className="flex-1 h-11"
+						className="flex-1 h-8"
 					/>
-					<span className="text-sm text-muted-foreground min-w-[80px] text-right">
+					<span className="text-sm text-foreground font-medium min-w-[80px] text-right">
 						{formatTime(currentTime)} / {formatTime(songDuration)}
 					</span>
 				</div>
 
 				{/* Speed Control */}
 				<div className="flex items-center gap-2">
-					<Music className="w-4 h-4 text-muted-foreground" />
+					<Gauge className="w-4 h-4 text-primary" />
 					<Slider
 						aria-label="Speed"
 						value={[speed]}
@@ -119,22 +119,23 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 						max={2}
 						step={0.25}
 						onValueChange={(v) => onSpeedChange(v[0])}
-						className="w-32 h-11"
+						className="w-32 h-8"
 					/>
 					<span className="text-sm min-w-[40px]">{speed.toFixed(2)}x</span>
 				</div>
 
 				{/* Selected-track Volume */}
 				<div className="flex items-center gap-2">
-					<Volume2 className="w-4 h-4 text-muted-foreground" />
+					<Volume2 className="w-4 h-4 text-primary" />
 					<Slider
 						aria-label="Selected Track Volume"
 						value={[selectedTrackVolume]}
 						min={0}
 						max={1}
 						step={0.05}
+						variant="triangular"
 						onValueChange={(v) => onSelectedTrackVolumeChange(v[0])}
-						className="w-24 h-11"
+						className="w-24 h-8"
 					/>
 				</div>
 
