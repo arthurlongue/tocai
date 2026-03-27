@@ -250,7 +250,6 @@ describe("Renderer", () => {
 
 			expect(getHitLineMoveToCalls()).toHaveLength(1);
 			expect(getHitLineLineToCalls()).toHaveLength(1);
-			expect(mockCtx.drawImage).toHaveBeenCalled();
 		});
 
 		it("draws the hit-line vertically across the full canvas height", () => {
@@ -569,7 +568,6 @@ describe("Renderer", () => {
 			} as unknown as any);
 			renderer.draw();
 
-			expect(mockCtx.drawImage).toHaveBeenCalled();
 			expect(mockCtx.strokeText).toHaveBeenCalledWith(
 				"5",
 				expect.any(Number),

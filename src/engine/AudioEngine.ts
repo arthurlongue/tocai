@@ -203,6 +203,36 @@ export class AudioEngine {
 	): void {
 		const freq = Tone.Frequency(note.pitch, "midi").toFrequency();
 		synth.triggerAttackRelease(note.string, freq, note.duration, time);
+
+		if (note.techniques?.bend) {
+			synth.detuneRamp(
+				note.string,
+				note.techniques.bend.value,
+				note.duration / 2,
+				time,
+			);
+		}
+
+		if (note.techniques?.slide) {
+			const offset =
+				note.techniques.slide.type === "up"
+					? 2
+					: note.techniques.slide.type === "down"
+						? -2
+						: 0;
+			if (offset !== 0) {
+				const targetFreq = Tone.Frequency(
+					note.pitch + offset,
+					"midi",
+				).toFrequency();
+				synth.frequencyRamp(
+					note.string,
+					targetFreq,
+					note.duration * 0.8,
+					time + note.duration * 0.2,
+				);
+			}
+		}
 	}
 
 	private _disposeTracks(): void {

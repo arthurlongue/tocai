@@ -308,5 +308,58 @@ export class Renderer {
 
 		// Reset shadow
 		this.ctx.shadowBlur = 0;
+
+		// 3. Draw Technique Indicators
+		const indicatorFontSize = Math.round(NOTE_HEIGHT * 0.7);
+		const indicatorOffsetY = -NOTE_HEIGHT * 0.9;
+
+		this.ctx.font = `bold ${indicatorFontSize}px 'Inter', system-ui, sans-serif`;
+		this.ctx.textAlign = "center";
+		this.ctx.textBaseline = "middle";
+		this.ctx.fillStyle = color;
+		this.ctx.strokeStyle = color;
+		this.ctx.lineWidth = 2;
+
+		for (const note of notes) {
+			const x = getNoteX(note.startTime, currentTime);
+			const y = getNoteY(note.string, laneHeight);
+			const tech = note.techniques;
+			if (!tech) continue;
+
+			if (tech.hammerOn) this.ctx.fillText("H", x, y + indicatorOffsetY);
+			if (tech.pullOff) this.ctx.fillText("P", x, y + indicatorOffsetY);
+
+			if (tech.bend) {
+				this.ctx.fillText("⤴", x + NOTE_HEIGHT * 0.6, y + indicatorOffsetY);
+			}
+
+			if (tech.slide && tech.slide.type !== "none") {
+				const slideLength = NOTE_HEIGHT * 0.8;
+				const slideY =
+					tech.slide.type === "up" ? y - slideLength : y + slideLength;
+				this.ctx.beginPath();
+				this.ctx.moveTo(x, y);
+				this.ctx.lineTo(x, slideY);
+				this.ctx.stroke();
+			}
+
+			if (tech.vibrato) {
+				const waveAmplitude = 4;
+				const waveSegments = 12;
+				const waveLength = NOTE_HEIGHT * 2;
+				const startX = x - waveLength / 2;
+				const vibratoY = y + indicatorOffsetY + indicatorFontSize * 0.8;
+
+				this.ctx.beginPath();
+				this.ctx.moveTo(startX, vibratoY);
+				for (let i = 1; i <= waveSegments; i++) {
+					const wx = startX + (waveLength / waveSegments) * i;
+					const wy =
+						vibratoY + (i % 2 === 1 ? -waveAmplitude : waveAmplitude);
+					this.ctx.lineTo(wx, wy);
+				}
+				this.ctx.stroke();
+			}
+		}
 	}
 }
