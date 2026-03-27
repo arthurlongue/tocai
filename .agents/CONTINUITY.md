@@ -1,5 +1,6 @@
 ## [DECISIONS]
 
+- 2026-03-26T21:20Z [TOOL] Implemented Guitar Pro effects: Hammer-ons, Pull-offs, Slides, Bends, and Vibrato across Parser, AudioEngine, and Renderer.
 - 2026-03-26T21:15Z [TOOL] Implemented offscreen static layering for background/strings and pre-allocated array reuse in `Renderer.ts` to solve performance bottlenecks.
 
 - 2026-03-23T00:00Z [USER] Use pnpm + BiomeJS for package management and linting/formatting.
@@ -15,6 +16,7 @@
 
 ## [OUTCOMES]
 
+- 2026-03-26T21:20Z [TOOL] Guitar Pro Effects: Implemented parsing for slides/bends in `flattening.ts`; added ramp-based frequency/detune modulation in `StringSynth.ts` and `AudioEngine.ts`; rendered "H"/"P", slide lines, bend arrows, and vibrato waves in `Renderer.ts`. Verified with 36/36 passing tests.
 - 2026-03-26T21:15Z [TOOL] Optimized Canvas Rendering: Reduced per-frame draw calls via static layering; minimized GC pressure by reusing `notesByString` arrays and caching fret string/gradients. Verified smooth 60fps+ and passing 14/14 tests in `Renderer.test.ts`.
 
 - 2026-03-26T19:01Z [TOOL] Cleaned up unit test suite: deleted useless `theme.test.ts` (self-referencing strings); pruned 7 redundant tests from `Renderer.test.ts`, `layout.test.ts`, and `Minimap.test.tsx`. Suite reduced from 113 to 101 tests across 18 files. All tests passing.

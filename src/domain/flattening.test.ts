@@ -20,6 +20,7 @@ describe("flattenSong", () => {
 			pullOff: false,
 			tie: { destination: false },
 			bend: null,
+			slide: null,
 		}) as unknown as TabNote;
 
 	const mockBeat = (notes: TabNote[], isRest = false): TabBeat =>
@@ -127,5 +128,19 @@ describe("flattenSong", () => {
 		expect(flattened.tracks[0].notes[3].fret).toBe(2);
 
 		expect(flattened.measures).toHaveLength(4);
+	});
+
+	it("should include note techniques like hammer-ons, slides, and bends", () => {
+		const note = mockNote(0, 5);
+		note.hammerOn = true;
+		note.slide = 1; // Slide up
+		note.bend = { origin: 0, destination: 4, middle: 2 }; // Half bend (4 points = 1/2 step)
+
+		const flattened = flattenSong(mockSong([mockTrack([mockBar([mockBeat([note])])])]));
+		const technique = flattened.tracks[0].notes[0].techniques;
+
+		expect(technique.hammerOn).toBe(true);
+		expect(technique.slide?.type).toBe("up");
+		expect(technique.bend?.value).toBe(1); // (4 - 0) / 4 = 1
 	});
 });

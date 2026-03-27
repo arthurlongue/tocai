@@ -576,5 +576,46 @@ describe("Renderer", () => {
 				expect.any(Number),
 			);
 		});
+
+		it("renders technique indicators (H, P, slides, bends, vibrato)", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Effects Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 60,
+						startTime: 0,
+						duration: 1.0,
+						string: 0,
+						fret: 5,
+						techniques: {
+							hammerOn: true,
+							slide: { type: "up" },
+							bend: { type: "normal", value: 1.0 },
+							vibrato: true,
+						},
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+			renderer.drawAt(0);
+
+			// Check for "H" label
+			expect(mockCtx.fillText).toHaveBeenCalledWith("H", expect.any(Number), expect.any(Number));
+			
+			// Check for Bend arrow
+			expect(mockCtx.fillText).toHaveBeenCalledWith("⤴", expect.any(Number), expect.any(Number));
+
+			// Check for Slide line (beginPath + moveTo + lineTo + stroke)
+			expect(mockCtx.beginPath).toHaveBeenCalled();
+			expect(mockCtx.stroke).toHaveBeenCalled();
+
+			// Check for Vibrato wavy line (many lineTo calls)
+			const lineToCalls = mockCtx.lineTo.mock.calls;
+			expect(lineToCalls.length).toBeGreaterThan(10);
+		});
 	});
 });

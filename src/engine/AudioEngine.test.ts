@@ -29,6 +29,8 @@ vi.mock("tone", () => {
 			this.connect = vi.fn().mockReturnThis();
 			this.dispose = vi.fn();
 			this.triggerRelease = vi.fn();
+			this.frequency = { rampTo: vi.fn() };
+			this.detune = { rampTo: vi.fn(), setValueAtTime: vi.fn() };
 		}),
 		Volume: vi.fn().mockImplementation(function (this: any) {
 			this.volume = { value: 0 };
@@ -227,5 +229,58 @@ describe("AudioEngine – triggerNote (regression)", () => {
 
 		expect(Tone.Frequency).toHaveBeenCalledWith(60, "midi");
 		expect(triggerSpy).toHaveBeenCalledWith(2, 440, 1, 0);
+	});
+});
+
+describe("AudioEngine – techniques (slides and bends)", () => {
+	it("schedules a detune ramp for bends", () => {
+		const engine = AudioEngine.getInstance();
+		engine.loadSong([makeTrack("t1", "Guitar")]);
+		const synth = engine.getStringSynth("t1");
+		const detuneRampSpy = vi.spyOn(synth!, "detuneRamp");
+
+		engine.triggerNote(
+			{
+				trackId: "t1",
+				pitch: 60,
+				startTime: 0,
+				duration: 1,
+				string: 0,
+				fret: 0,
+				techniques: { bend: { type: "normal", value: 2 } }, // Whole bend
+			},
+			0,
+		);
+
+		expect(detuneRampSpy).toHaveBeenCalledWith(0, 2, 0.5, 0);
+	});
+
+	it("schedules a frequency ramp for slides", () => {
+		const engine = AudioEngine.getInstance();
+		engine.loadSong([makeTrack("t1", "Guitar")]);
+		const synth = engine.getStringSynth("t1");
+		const frequencyRampSpy = vi.spyOn(synth!, "frequencyRamp");
+
+		engine.triggerNote(
+			{
+				trackId: "t1",
+				pitch: 60,
+				startTime: 0,
+				duration: 1,
+				string: 0,
+				fret: 5,
+				techniques: { slide: { type: "up" } },
+			},
+			0,
+		);
+
+		// Slide up by 2 semitones = pitch 60 -> 62
+		expect(Tone.Frequency).toHaveBeenCalledWith(62, "midi");
+		expect(frequencyRampSpy).toHaveBeenCalledWith(
+			0,
+			440, // Mocked Frequency returns 440
+			0.8,
+			0.2,
+		);
 	});
 });

@@ -75,6 +75,17 @@ export function flattenSong(tabSong: TabSong): Song {
 								vibrato: !!note.vibrato,
 								hammerOn: note.hammerOn,
 								pullOff: note.pullOff,
+								bend: note.bend
+									? {
+											type: "normal", // GP5/GPX usually have detailed points, but we simplify for now
+											value: (note.bend.destination - note.bend.origin) / 4, // 4 points = 1/2 step in some GP versions
+										}
+									: undefined,
+								slide: note.slide
+									? {
+											type: note.slide > 0 ? "up" : "down",
+										}
+									: undefined,
 							},
 						};
 
