@@ -30,9 +30,28 @@ export class Renderer {
     private maxNoteDuration: number = 0;
 
     // Optimization caches
-    private bgGradient: CanvasGradient | null = null;
     private lastWidth: number = 0;
     private lastHeight: number = 0;
+
+    // Static layer for background and string lines
+    private staticCanvas: HTMLCanvasElement | null = null;
+    private staticCtx: CanvasRenderingContext2D | null = null;
+
+    // Reuse arrays to minimize GC pressure
+    private notesByString: PlaybackNote[][] = Array.from(
+        { length: STRING_COUNT },
+        () => [],
+    );
+
+    // Cache fret number strings
+    private fretStringCache: string[] = Array.from({ length: 32 }, (_, i) =>
+        i.toString(),
+    );
+
+    // Cache tail gradients per string color
+    private tailGradients: (CanvasGradient | null)[] = new Array(STRING_COUNT).fill(
+        null,
+    );
 
     // FPS Tracking
     private lastFrameTime: number = 0;
@@ -55,6 +74,8 @@ export class Renderer {
             (maxDuration, note) => Math.max(maxDuration, note.duration),
             0,
         );
+        // Invalidate static layer when track changes
+        this.lastWidth = 0;
     }
 
     /**
@@ -136,41 +157,28 @@ export class Renderer {
         const dpr = window.devicePixelRatio || 1;
         const width = this.canvas.width / dpr;
         const height = this.canvas.height / dpr;
-        const laneHeight = height / STRING_COUNT;
 
-        // Re-cache gradients if size changed
+        // Re-cache static layer/gradients if size changed or track reset
         if (width !== this.lastWidth || height !== this.lastHeight) {
-            this.bgGradient = this.ctx.createLinearGradient(0, 0, 0, height);
-            this.bgGradient.addColorStop(0, "#0d0d14");
-            this.bgGradient.addColorStop(1, "#080810");
+            this.updateStaticLayer(dpr, width, height);
+            this.updateTailGradients(width);
             this.lastWidth = width;
             this.lastHeight = height;
         }
 
         this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        // --- 1. Background ---
-        if (this.bgGradient) {
-            this.ctx.fillStyle = this.bgGradient;
+        // --- 1. Background & String Lines (Shared Static Layer) ---
+        if (this.staticCanvas) {
+            // Draw pre-rendered background and strings
+            this.ctx.drawImage(this.staticCanvas, 0, 0, width, height);
+        } else {
+            // Fallback (should not happen if updateStaticLayer succeeds)
+            this.ctx.fillStyle = "#0d0d14";
             this.ctx.fillRect(0, 0, width, height);
         }
 
-        // --- 2. String lines (drawn first so notes sit on top) ---
-        for (let i = 0; i < STRING_COUNT; i++) {
-            const y = Math.floor(getNoteY(i, laneHeight));
-            const color = STRING_COLORS[i] ?? "#888";
-
-            this.ctx.save();
-            this.ctx.shadowColor = color;
-            this.ctx.shadowBlur = 4;
-            this.ctx.strokeStyle = `rgba(${STRING_COLORS_RGB[i]},0.35)`;
-            this.ctx.lineWidth = 1.5;
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, y);
-            this.ctx.lineTo(width, y);
-            this.ctx.stroke();
-            this.ctx.restore();
-        }
+        const laneHeight = height / STRING_COUNT;
 
         // --- 3. Hit line ---
         const hitLineX = Math.floor(HIT_LINE_X);
@@ -196,34 +204,89 @@ export class Renderer {
             );
 
             // Determine the actual string count from the track's tuning
+            // Determine the actual string count from the track's tuning
             const actualStringCount = this.track.tuning.length;
             const stringCount = Math.min(actualStringCount, STRING_COUNT);
 
-            // Optimization: Group notes by string in a single pass
-            const notesByString: PlaybackNote[][] = Array.from(
-                { length: stringCount },
-                () => [],
-            );
+            // Optimization: Use pre-allocated notesByString to avoid allocations
+            for (let i = 0; i < STRING_COUNT; i++) {
+                this.notesByString[i].length = 0;
+            }
 
             for (const n of visibleNotes) {
-                // Safely handle notes with string indices within bounds
                 if (n.string >= 0 && n.string < stringCount) {
-                    notesByString[n.string].push(n);
+                    this.notesByString[n.string].push(n);
                 }
             }
 
             // Render notes per string lane
             for (let s = 0; s < stringCount; s++) {
-                if (notesByString[s].length > 0) {
-                    this.drawNotesInString(notesByString[s], s, currentTime, laneHeight);
+                if (this.notesByString[s].length > 0) {
+                    this.drawNotesInString(
+                        this.notesByString[s],
+                        s,
+                        currentTime,
+                        laneHeight,
+                    );
                 }
             }
         }
 
-// --- 5. FPS Counter (dev only) ---
-    if (import.meta.env.DEV) {
-      this.renderFPS(width);
+        // --- 5. FPS Counter (dev only) ---
+        if ((import.meta as any).env?.DEV) {
+            this.renderFPS(width);
+        }
     }
+
+    private updateStaticLayer(dpr: number, width: number, height: number): void {
+        if (!this.staticCanvas) {
+            this.staticCanvas = document.createElement("canvas");
+        }
+        this.staticCanvas.width = width * dpr;
+        this.staticCanvas.height = height * dpr;
+        this.staticCtx = this.staticCanvas.getContext("2d");
+        if (!this.staticCtx) return;
+
+        const ctx = this.staticCtx;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // 1. Background Gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, "#0d0d14");
+        gradient.addColorStop(1, "#080810");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. String Lines (with shadowBlur which is expensive, but here it's static)
+        const laneHeight = height / STRING_COUNT;
+        for (let i = 0; i < STRING_COUNT; i++) {
+            const y = Math.floor(getNoteY(i, laneHeight));
+            const color = STRING_COLORS[i] ?? "#888";
+
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 4;
+            ctx.strokeStyle = `rgba(${STRING_COLORS_RGB[i]},0.35)`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    private updateTailGradients(width: number): void {
+        for (let i = 0; i < STRING_COUNT; i++) {
+            const colorRgb = STRING_COLORS_RGB[i] ?? "255,255,255";
+            // Pre-calculate a long-enough gradient for tails
+            // MAX_TAIL_WIDTH covers most notes; longer ones will just repeat last color if we set canvas coords right
+            const gradWidth = Math.max(width, 2000);
+            const grad = this.ctx.createLinearGradient(0, 0, gradWidth, 0);
+            grad.addColorStop(0, `rgba(${colorRgb},${NOTE_TAIL_ALPHA})`);
+            grad.addColorStop(1, `rgba(${colorRgb},0)`);
+            this.tailGradients[i] = grad;
+        }
     }
 
     private renderFPS(width: number): void {
@@ -241,40 +304,36 @@ export class Renderer {
         laneHeight: number,
     ): void {
         const color = STRING_COLORS[stringIndex] ?? "#fff";
-        const colorRgb = STRING_COLORS_RGB[stringIndex] ?? "255,255,255";
         const tailH = NOTE_HEIGHT * 0.55;
         const tailHalfH = tailH / 2;
 
         // 1. Draw Tails
+        const tailGrad = this.tailGradients[stringIndex];
+        if (tailGrad) {
+            this.ctx.fillStyle = tailGrad;
+        }
+
         for (const note of notes) {
             const x = getNoteX(note.startTime, currentTime);
             const y = getNoteY(note.string, laneHeight);
             
-            // Adjust tail start distance based on the amount of digits to fix gaps
             const numDigits = note.fret.toString().length;
             const noteHalfW = numDigits === 1 ? 10 : 18;
-
             const tailWidth = Math.max(0, note.duration * PIXELS_PER_SECOND - noteHalfW);
 
             if (tailWidth > 0) {
-                const tailGrad = this.ctx.createLinearGradient(
-                    x + noteHalfW,
-                    y,
-                    x + noteHalfW + tailWidth,
-                    y,
-                );
-                tailGrad.addColorStop(0, `rgba(${colorRgb},${NOTE_TAIL_ALPHA})`);
-                tailGrad.addColorStop(1, `rgba(${colorRgb},0)`);
-                this.ctx.fillStyle = tailGrad;
-
+                this.ctx.save();
+                // Shift the context so the cached gradient (starting at 0) matches the tail start
+                this.ctx.translate(x + noteHalfW, 0);
                 this.ctx.beginPath();
-                this.ctx.roundRect(x + noteHalfW, y - tailHalfH, tailWidth, tailH, [
+                this.ctx.roundRect(0, y - tailHalfH, tailWidth, tailH, [
                     0,
                     NOTE_CORNER_RADIUS,
                     NOTE_CORNER_RADIUS,
                     0,
                 ]);
                 this.ctx.fill();
+                this.ctx.restore();
             }
         }
 
@@ -292,7 +351,7 @@ export class Renderer {
         for (const note of notes) {
             const x = getNoteX(note.startTime, currentTime);
             const y = getNoteY(note.string, laneHeight);
-            const text = note.fret.toString();
+            const text = this.fretStringCache[note.fret] ?? note.fret.toString();
 
             // Background stroke to hide the string line behind the number
             this.ctx.strokeStyle = "#0d0d14"; // Dark background

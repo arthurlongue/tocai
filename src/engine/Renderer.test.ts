@@ -2,14 +2,12 @@
  * @vitest-environment jsdom
  */
 
-import type { Transport } from "tone";
 import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	HIT_LINE_X,
 	NOTE_HEIGHT,
 	STRING_COLORS,
-	STRING_COUNT,
 } from "./constants";
 import {
 	resetPlaybackTimelineState,
@@ -33,6 +31,7 @@ vi.mock("tone", () => ({
 describe("Renderer", () => {
 	let canvas: HTMLCanvasElement;
 	let mockCtx: any;
+	let staticMockCtx: any;
 	let fillStyleHistory: string[];
 	let fontHistory: string[];
 	let textAlignHistory: string[];
@@ -64,15 +63,17 @@ describe("Renderer", () => {
 		textBaselineHistory = [];
 		shadowColorHistory = [];
 		shadowBlurHistory = [];
+		
 		vi.mocked(Tone.getTransport).mockReturnValue({
 			seconds: 0,
-		} as unknown as typeof Transport);
+		} as unknown as any);
+
 		vi.mocked(Tone.getContext).mockReturnValue({
 			rawContext: {
 				outputLatency: 0,
-			},
+			} as unknown as AudioContext,
 			lookAhead: 0,
-		});
+		} as unknown as Tone.Context);
 
 		// Basic canvas mock
 		canvas = document.createElement("canvas");
@@ -105,6 +106,8 @@ describe("Renderer", () => {
 			setTransform: vi.fn(),
 			save: vi.fn(),
 			restore: vi.fn(),
+			drawImage: vi.fn(),
+			translate: vi.fn(),
 		};
 
 		Object.defineProperties(mockCtx, {
@@ -164,10 +167,32 @@ describe("Renderer", () => {
 			},
 		});
 
-		vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as any);
+		staticMockCtx = {
+			...mockCtx,
+			clearRect: vi.fn(),
+			beginPath: vi.fn(),
+			moveTo: vi.fn(),
+			lineTo: vi.fn(),
+			stroke: vi.fn(),
+			fill: vi.fn(),
+			arc: vi.fn(),
+			fillText: vi.fn(),
+			strokeText: vi.fn(),
+			roundRect: vi.fn(),
+			fillRect: vi.fn(),
+			setTransform: vi.fn(),
+			save: vi.fn(),
+			restore: vi.fn(),
+			drawImage: vi.fn(),
+			translate: vi.fn(),
+		};
+
+		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+			function getContext(this: HTMLCanvasElement) {
+				return (this === canvas ? mockCtx : staticMockCtx) as unknown as CanvasRenderingContext2D;
+			},
+		);
 	});
-
-
 
 	describe("VISUAL-01: Horizontal scrolling animation", () => {
 		it("scrolls notes horizontally right-to-left based on time progression", () => {
@@ -190,29 +215,22 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.setTrack(mockTrack as any);
 
-			// At time 0, note at startTime 2.0 should be far to the right
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 
-			// Verify text was drawn for the visible note.
 			expect(mockCtx.fillText).toHaveBeenCalled();
 
-			// At time 2.0, note should be near HIT_LINE_X (100)
-			// Note: The renderer adds a small latency compensation (0.05), so the actual
-			// position will be slightly offset: 100 + 0.05 * 200 = 110
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 2.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			mockCtx.fillText.mockClear();
 			renderer.draw();
 
-			// The note should be drawn near HIT_LINE_X when currentTime matches startTime
 			const fillTextCalls = mockCtx.fillText.mock.calls;
 			expect(fillTextCalls.length).toBeGreaterThan(0);
 			const noteX = fillTextCalls[0][1] as number;
-			// Expected: HIT_LINE_X + 0.05 * PIXELS_PER_SECOND = 100 + 10 = 110
 			expect(noteX).toBeCloseTo(110, 0);
 		});
 	});
@@ -232,7 +250,7 @@ describe("Renderer", () => {
 
 			expect(getHitLineMoveToCalls()).toHaveLength(1);
 			expect(getHitLineLineToCalls()).toHaveLength(1);
-			expect(mockCtx.fillRect).toHaveBeenCalledWith(0, 0, 800, 600);
+			expect(mockCtx.drawImage).toHaveBeenCalled();
 		});
 
 		it("draws the hit-line vertically across the full canvas height", () => {
@@ -306,10 +324,9 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.setTrack(mockTrack as any);
 
-			// Set time so note is at hit-line
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 5.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 
 			const fillCall = mockCtx.fillText.mock.calls[0];
@@ -345,24 +362,21 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			// Verify Tone.getTransport() was called to get current time
 			expect(Tone.getTransport).toHaveBeenCalled();
 			expect(Tone.getContext).toHaveBeenCalled();
 		});
 
 		it("uses latency compensation for accurate sync", () => {
-			// Mock with non-zero latency
 			vi.mocked(Tone.getContext).mockReturnValue({
 				rawContext: {
-					outputLatency: 0.1, // 100ms latency
-				},
-				lookAhead: 0.025, // 25ms look-ahead
-			});
+					outputLatency: 0.1,
+				} as unknown as AudioContext,
+				lookAhead: 0.025,
+			} as unknown as Tone.Context);
 
 			const renderer = new Renderer(canvas);
 			renderer.draw();
 
-			// Verify getContext was called to retrieve latency info
 			expect(Tone.getContext).toHaveBeenCalled();
 		});
 
@@ -371,16 +385,10 @@ describe("Renderer", () => {
 			const rafSpy = vi.spyOn(window, "requestAnimationFrame");
 
 			renderer.start();
-
-			// requestAnimationFrame should be called to start the loop
 			expect(rafSpy).toHaveBeenCalled();
 
-			// Get the callback and verify it calls draw which schedules next frame
 			const rafCallback = rafSpy.mock.calls[0][0];
-			rafCallback(0); // Simulate frame callback
-
-			// After draw is called, another RAF should be scheduled if loop continues
-			// (This is tested indirectly through the draw method)
+			rafCallback(0);
 		});
 
 		it("keeps note positions stable when speed changes at the same transport time", () => {
@@ -405,7 +413,7 @@ describe("Renderer", () => {
 
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 2.0,
-			} as unknown as Transport);
+			} as unknown as any);
 
 			setPlaybackTimelineSpeed(1, 2.0);
 			renderer.setSpeed(1);
@@ -446,7 +454,7 @@ describe("Renderer", () => {
 
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 2.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			setPlaybackTimelineSpeed(1, 2.0);
 			renderer.draw();
 			const baselineX = mockCtx.fillText.mock.calls[0]?.[1] as number;
@@ -456,7 +464,7 @@ describe("Renderer", () => {
 			setPlaybackTimelineSpeed(0.5, 2.0);
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 3.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 			const slowedLaterX = mockCtx.fillText.mock.calls[0]?.[1] as number;
 
@@ -495,10 +503,9 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.setTrack(mockTrack as any);
 
-			// Set time so notes are visible in viewport
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 5.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 
 			const noteFillTextCalls = getNoteFillTextCalls();
@@ -527,10 +534,9 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.setTrack(mockTrack as any);
 
-			// Set time so note is visible
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 5.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 
 			expect(shadowColorHistory).toContain(STRING_COLORS[0]);
@@ -558,13 +564,12 @@ describe("Renderer", () => {
 			const renderer = new Renderer(canvas);
 			renderer.setTrack(mockTrack as any);
 
-			// Set time so note is visible
 			vi.mocked(Tone.getTransport).mockReturnValue({
 				seconds: 5.0,
-			} as unknown as Transport);
+			} as unknown as any);
 			renderer.draw();
 
-			expect(mockCtx.stroke).toHaveBeenCalledTimes(STRING_COUNT + 2);
+			expect(mockCtx.drawImage).toHaveBeenCalled();
 			expect(mockCtx.strokeText).toHaveBeenCalledWith(
 				"5",
 				expect.any(Number),

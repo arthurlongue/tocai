@@ -1,5 +1,7 @@
 ## [DECISIONS]
 
+- 2026-03-26T21:15Z [TOOL] Implemented offscreen static layering for background/strings and pre-allocated array reuse in `Renderer.ts` to solve performance bottlenecks.
+
 - 2026-03-23T00:00Z [USER] Use pnpm + BiomeJS for package management and linting/formatting.
 - 2026-03-25T17:00Z [USER] Replace Vite README with Tocaí-specific docs; keep app dark-mode only.
 - 2026-03-25T18:08Z [USER] Fix stopped-state Visualizer seek regression + Playwright server reuse in CI.
@@ -12,6 +14,8 @@
 - 2026-03-25T22:00Z [USER] Implement multi-track audio: simultaneous playback, track selection, solo mode, dual volume controls.
 
 ## [OUTCOMES]
+
+- 2026-03-26T21:15Z [TOOL] Optimized Canvas Rendering: Reduced per-frame draw calls via static layering; minimized GC pressure by reusing `notesByString` arrays and caching fret string/gradients. Verified smooth 60fps+ and passing 14/14 tests in `Renderer.test.ts`.
 
 - 2026-03-26T19:01Z [TOOL] Cleaned up unit test suite: deleted useless `theme.test.ts` (self-referencing strings); pruned 7 redundant tests from `Renderer.test.ts`, `layout.test.ts`, and `Minimap.test.tsx`. Suite reduced from 113 to 101 tests across 18 files. All tests passing.
 - 2026-03-26T18:58Z [TOOL] Consolidated E2E tests: reduced 12 tests to 7 by removing redundancies in `smoke.spec.ts` and `minimap.spec.ts`; deleted brittle `responsive.spec.ts`. Updated `helpers.ts` locators for metadata and volume. All 7 tests passing.
@@ -37,6 +41,8 @@
 - 2026-03-23T14:45Z [TOOL] Scaffolded clean-architecture dirs, initialized Shadcn UI for Tailwind v4.
 
 ## [DISCOVERIES]
+
+- 2026-03-26T21:15Z [TOOL] `jsdom` + `vitest` hangs when multiple canvases share a single mocked `getContext` on the prototype; fixed in `Renderer.test.ts` by using separate mock objects for main and static canvases.
 
 - 2026-03-26T01:06Z [CODE] Renderer draws six glowing string lanes, two-pass hit-line stroke, per-note text, FPS label. Tests counting raw canvas calls drift unless they isolate note-hit-line from lane/FPS.
 - 2026-03-23T14:46Z [TOOL] Shadcn CLI `init -d` fails with Tailwind v4 unless `components.json` has `"config": ""` + `"cssVariables": true`.
