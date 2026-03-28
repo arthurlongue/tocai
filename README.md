@@ -15,18 +15,14 @@ The current app flow is:
 Implemented today:
 
 - File upload for `.gp`, `.gp3`, `.gp4`, `.gp5`, and `.gpx`
-- IndexedDB-backed local storage primitives
-- Flattening from Guitar Pro bars/beats into `PlaybackNote[]`
-- Tone.js transport controls and per-string synth playback
-- Scrolling canvas visualizer
+- IndexedDB-backed local storage with a library UI to browse and reload stored songs
+- Flattening from Guitar Pro bars/beats into `PlaybackNote[]` with technique extraction (hammer-ons, pull-offs, slides, bends, vibrato)
+- Tone.js transport controls and per-string synth playback with technique scheduling (detune ramps for bends, frequency ramps for slides)
+- Multi-track audio: simultaneous playback, track selection, solo/mute, and per-track volume via `TrackMixer`
+- Scrolling canvas visualizer with technique indicator rendering (H/P labels, slide lines, bend arrows, vibrato waves)
 - Click-to-seek minimap
+- Shared playback timeline sync layer for speed-adjusted seeking
 - Unit/component tests with Vitest and browser E2E tests with Playwright
-
-Current limitations:
-
-- Playback and rendering use `song.tracks[0]`; multi-track switching is not implemented yet.
-- Uploaded files are saved locally, but there is no library UI to browse or reload stored songs.
-- Some in-app copy still describes planned work that already exists, so this README is the more accurate project summary.
 
 ## Stack
 
@@ -58,12 +54,15 @@ src/
 Key runtime flow:
 
 - `src/components/FileUpload.tsx` saves the raw upload and parses it into the app's `Song` model.
-- `src/domain/flattening.ts` converts Guitar Pro bars and beats into absolute-time notes, including basic repeat and tie handling.
+- `src/components/Library.tsx` browses and reloads stored songs from IndexedDB.
+- `src/domain/flattening.ts` converts Guitar Pro bars and beats into absolute-time notes, including technique extraction and repeat/tie handling.
 - `src/App.tsx` loads the selected song into the singleton `AudioEngine`.
-- `src/engine/AudioEngine.ts` schedules playback with `Tone.Part`.
-- `src/engine/StringSynth.ts` uses one `Tone.Synth` per string so notes can ring independently.
-- `src/components/Visualizer.tsx` and `src/engine/Renderer.ts` render the scrolling note lanes on a HiDPI-aware canvas.
+- `src/engine/AudioEngine.ts` schedules playback with `Tone.Part`, including bend detune ramps and slide frequency ramps.
+- `src/engine/StringSynth.ts` uses one `Tone.Synth` per string so notes can ring independently with per-string pitch modulation.
+- `src/components/TrackMixer.tsx` provides per-track volume, solo, and mute controls.
+- `src/components/Visualizer.tsx` and `src/engine/Renderer.ts` render scrolling note lanes with technique indicators on a HiDPI-aware canvas.
 - `src/components/Minimap.tsx` and `src/engine/MinimapRenderer.ts` provide an overview timeline with click-to-seek behavior.
+- `src/engine/playbackTimeline.ts` provides a shared speed-adjusted timeline for renderer and minimap sync.
 
 ## Getting Started
 
@@ -103,7 +102,6 @@ pnpm lint
 Notes:
 
 - `pnpm lint` runs `biome check --write --unsafe .`, so it can modify files.
-- The Playwright config currently starts the dev server with `npm run dev`; the project otherwise uses `pnpm`.
 
 ## Testing
 
@@ -128,7 +126,5 @@ Reference material lives in:
 
 ## Known Gaps
 
-- Track selection UI is only a placeholder.
-- Audio and canvas rendering are currently hard-coded for six strings.
+- Audio and canvas rendering are hard-coded to six strings via `STRING_COUNT`.
 - Speed control is shared through a module-level hook pattern rather than a dedicated state container.
-- The playback hook contains a renderer lookup path that does not currently match the visualizer DOM structure.
