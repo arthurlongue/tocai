@@ -17,6 +17,31 @@ import {
 	setCurrentSong,
 } from "./services/storage";
 
+const NOTE_NAMES = [
+	"C",
+	"C#",
+	"D",
+	"Eb",
+	"E",
+	"F",
+	"F#",
+	"G",
+	"Ab",
+	"A",
+	"Bb",
+	"B",
+] as const;
+
+const normalizeTuningForDisplay = (tuning: number[]) =>
+	tuning.length > 1 && tuning[0] > tuning[tuning.length - 1]
+		? [...tuning].reverse()
+		: tuning;
+
+const formatTuning = (tuning: number[]) =>
+	normalizeTuningForDisplay(tuning)
+		.map((midiNote) => NOTE_NAMES[((midiNote % 12) + 12) % 12] ?? "C")
+		.join(" ");
+
 /**
  * Main application component for Tocaí - a web-based Guitar Pro player.
  *
@@ -86,6 +111,21 @@ function App() {
 	}, [song, engine, resetSpeed]);
 
 	const currentTrack = song?.tracks[selectedTrackIndex];
+	const songKeySummary = song
+		? song.keySignaturesVaryByTrack
+			? "Varies by track"
+			: song.keySignatures?.length
+				? song.keySignatures.map((key) => key.label).join(" -> ")
+				: "Unknown"
+		: "Unknown";
+	const currentTrackKeySummary = currentTrack
+		? currentTrack.keySignatures?.length
+			? currentTrack.keySignatures.map((key) => key.label).join(" -> ")
+			: "Unknown"
+		: "Unknown";
+	const currentTrackTuning = currentTrack
+		? formatTuning(currentTrack.tuning)
+		: "Unknown";
 
 	// Synchronize audio engine with current track/volume/mute/solo state
 	useEffect(() => {
@@ -234,6 +274,30 @@ function App() {
 										<span className="text-xs font-bold ml-1">
 											{song.tracks.length}
 										</span>
+									</div>
+									<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 rounded-lg shadow-sm">
+										<span className="text-xs font-semibold text-foreground">
+											Key
+										</span>
+										<span className="text-xs font-bold ml-1">
+											{songKeySummary}
+										</span>
+									</div>
+								</div>
+								<div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 mb-5">
+									<p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/70 mb-2">
+										Selected Track
+									</p>
+									<div className="flex flex-col gap-1">
+										<p className="text-sm font-semibold text-foreground truncate">
+											{currentTrack?.name ?? "No track selected"}
+										</p>
+										<p className="text-xs text-foreground/80">
+											Tuning: {currentTrackTuning}
+										</p>
+										<p className="text-xs text-foreground/80">
+											Key: {currentTrackKeySummary}
+										</p>
 									</div>
 								</div>
 								<Button

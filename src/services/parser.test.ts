@@ -28,6 +28,7 @@ describe("parseFile", () => {
 		const parsedSong = { tracks: [] };
 		const flattenedSong = {
 			metadata: { title: "Parsed", artist: "Artist", album: "" },
+			keySignatures: [],
 			tracks: [],
 			measures: [],
 			durationSeconds: 0,

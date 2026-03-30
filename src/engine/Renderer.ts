@@ -1,5 +1,5 @@
 import * as Tone from "tone";
-import type { PlaybackNote, Track } from "../domain/types";
+import type { HarmonyEvent, PlaybackNote, Track } from "../domain/types";
 import {
 	HIT_LINE_X,
 	NOTE_CORNER_RADIUS,
@@ -20,6 +20,9 @@ function hexToRgb(hex: string): string {
 	return `${r},${g},${b}`;
 }
 const STRING_COLORS_RGB = STRING_COLORS.map(hexToRgb);
+const CHORD_LABEL_PADDING = 8;
+const CHORD_LABEL_MIN_SPACING = 10;
+const CHORD_LABEL_HORIZONTAL_BUFFER = 48;
 
 /**
  * Canvas-based tablature renderer.
@@ -237,36 +240,53 @@ export class Renderer {
 		this.ctx.stroke();
 
 		// --- 4. Notes ---
-		if (this.track && this.track.notes.length > 0) {
-			const visibleNotes = calculateVisibleNotes(
-				this.track.notes,
-				currentTime,
-				width,
-				this.maxNoteDuration,
-			);
+		if (this.track) {
+			if (this.track.notes.length > 0) {
+				const visibleNotes = calculateVisibleNotes(
+					this.track.notes,
+					currentTime,
+					width,
+					this.maxNoteDuration,
+				);
 
-			// Determine the actual string count from the track's tuning
-			const actualStringCount = this.track.tuning.length;
-			const stringCount = Math.min(actualStringCount, STRING_COUNT);
+				// Determine the actual string count from the track's tuning
+				const actualStringCount = this.track.tuning.length;
+				const stringCount = Math.min(actualStringCount, STRING_COUNT);
 
-			// Optimization: Group notes by string in a single pass
-			const notesByString: PlaybackNote[][] = Array.from(
-				{ length: stringCount },
-				() => [],
-			);
+				// Optimization: Group notes by string in a single pass
+				const notesByString: PlaybackNote[][] = Array.from(
+					{ length: stringCount },
+					() => [],
+				);
 
-			for (const n of visibleNotes) {
-				// Safely handle notes with string indices within bounds
-				if (n.string >= 0 && n.string < stringCount) {
-					notesByString[n.string].push(n);
+				for (const n of visibleNotes) {
+					// Safely handle notes with string indices within bounds
+					if (n.string >= 0 && n.string < stringCount) {
+						notesByString[n.string].push(n);
+					}
+				}
+
+				// Render notes per string lane
+				for (let s = 0; s < stringCount; s++) {
+					if (notesByString[s].length > 0) {
+						this.drawNotesInString(
+							notesByString[s],
+							s,
+							currentTime,
+							laneHeight,
+						);
+					}
 				}
 			}
 
-			// Render notes per string lane
-			for (let s = 0; s < stringCount; s++) {
-				if (notesByString[s].length > 0) {
-					this.drawNotesInString(notesByString[s], s, currentTime, laneHeight);
-				}
+			if ((this.track.harmonyEvents?.length ?? 0) > 0) {
+				this.drawHarmonyLabels(
+					this.track.harmonyEvents ?? [],
+					currentTime,
+					width,
+					height,
+					laneHeight,
+				);
 			}
 		}
 
@@ -283,6 +303,63 @@ export class Renderer {
 		this.ctx.textAlign = "right";
 		this.ctx.textBaseline = "top";
 		this.ctx.fillText(`${this.fps} FPS`, width - 10, 10);
+	}
+
+	private drawHarmonyLabels(
+		harmonyEvents: HarmonyEvent[],
+		currentTime: number,
+		width: number,
+		height: number,
+		laneHeight: number,
+	): void {
+		this.ctx.save();
+		this.ctx.font = "700 14px 'Inter', system-ui, sans-serif";
+		this.ctx.textAlign = "center";
+		this.ctx.textBaseline = "middle";
+		this.ctx.lineWidth = 4;
+		this.ctx.strokeStyle = "#0d0d14";
+		this.ctx.fillStyle = "rgba(255,255,255,0.92)";
+		this.ctx.shadowBlur = 0;
+
+		let lastLabelRight = Number.NEGATIVE_INFINITY;
+
+		for (const harmonyEvent of harmonyEvents) {
+			if (harmonyEvent.confidence < 0.82) {
+				continue;
+			}
+
+			const x = getNoteX(harmonyEvent.startTime, currentTime);
+			if (
+				x < -CHORD_LABEL_HORIZONTAL_BUFFER ||
+				x > width + CHORD_LABEL_HORIZONTAL_BUFFER
+			) {
+				continue;
+			}
+
+			const halfLabelWidth =
+				Math.max(24, harmonyEvent.label.length * 8 + CHORD_LABEL_PADDING * 2) /
+				2;
+			const labelLeft = x - halfLabelWidth;
+			const labelRight = x + halfLabelWidth;
+
+			if (labelLeft <= lastLabelRight + CHORD_LABEL_MIN_SPACING) {
+				continue;
+			}
+
+			const y = Math.max(
+				16,
+				Math.min(
+					height - 16,
+					getNoteY(harmonyEvent.anchorString, laneHeight) - NOTE_HEIGHT * 1.4,
+				),
+			);
+
+			this.ctx.strokeText(harmonyEvent.label, x, y);
+			this.ctx.fillText(harmonyEvent.label, x, y);
+			lastLabelRight = labelRight;
+		}
+
+		this.ctx.restore();
 	}
 
 	/**

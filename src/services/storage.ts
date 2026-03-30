@@ -7,26 +7,27 @@ localforage.config({
 	storeName: "library",
 });
 
-/**
- * Saves a raw Guitar Pro file blob to IndexedDB.
- *
- * @param name - Unique identifier for the file
- * @param data - The file blob to store
- */
-export async function saveFile(name: string, data: Blob): Promise<void> {
-	await localforage.setItem(name, data);
-}
+const SONG_KEY_PREFIX = "song-";
 
-/**
- * Retrieves a raw Guitar Pro file blob from IndexedDB.
- *
- * @param name - The identifier of the file to retrieve
- * @returns The file blob, or null if not found
- */
-export async function getFile(name: string): Promise<Blob | null> {
-	const data = await localforage.getItem<Blob>(name);
-	return data;
-}
+const getSongKey = (name: string): string => `${SONG_KEY_PREFIX}${name}`;
+
+const isSong = (value: unknown): value is Song => {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+
+	const candidate = value as Partial<Song>;
+
+	return (
+		!!candidate.metadata &&
+		typeof candidate.metadata.title === "string" &&
+		typeof candidate.metadata.artist === "string" &&
+		typeof candidate.metadata.album === "string" &&
+		Array.isArray(candidate.tracks) &&
+		Array.isArray(candidate.measures) &&
+		typeof candidate.durationSeconds === "number"
+	);
+};
 
 /**
  * Saves a parsed Song object to IndexedDB.
@@ -35,7 +36,7 @@ export async function getFile(name: string): Promise<Blob | null> {
  * @param song - The Song object to store
  */
 export async function saveSong(name: string, song: Song): Promise<void> {
-	await localforage.setItem(`song-${name}`, song);
+	await localforage.setItem(getSongKey(name), song);
 }
 
 /**
@@ -45,7 +46,8 @@ export async function saveSong(name: string, song: Song): Promise<void> {
  * @returns The Song object, or null if not found
  */
 export async function getSong(name: string): Promise<Song | null> {
-	return await localforage.getItem<Song>(`song-${name}`);
+	const storedValue = await localforage.getItem<unknown>(getSongKey(name));
+	return isSong(storedValue) ? storedValue : null;
 }
 
 /**
@@ -73,14 +75,23 @@ export async function getCurrentSongName(): Promise<string | null> {
  */
 export async function listSongs(): Promise<{ name: string; song: Song }[]> {
 	const keys = await localforage.keys();
-	const songKeys = keys.filter((key) => key.startsWith("song-"));
+	const songKeys = keys.filter((key) => key.startsWith(SONG_KEY_PREFIX));
 	const songs = await Promise.all(
-		songKeys.map(async (key) => ({
-			name: key.replace("song-", ""),
-			song: (await localforage.getItem<Song>(key)) as Song,
-		})),
+		songKeys.map(async (key) => {
+			const storedValue = await localforage.getItem<unknown>(key);
+			if (!isSong(storedValue)) {
+				return null;
+			}
+
+			return {
+				name: key.slice(SONG_KEY_PREFIX.length),
+				song: storedValue,
+			};
+		}),
 	);
-	return songs;
+	return songs.filter(
+		(song): song is { name: string; song: Song } => song !== null,
+	);
 }
 
 /**
@@ -90,8 +101,9 @@ export async function listSongs(): Promise<{ name: string; song: Song }[]> {
  * @param name - The name of the song to delete
  */
 export async function deleteSong(name: string): Promise<void> {
-	await localforage.removeItem(`song-${name}`);
-	await localforage.removeItem(name); // Also remove the raw file if any
+	await localforage.removeItem(getSongKey(name));
+	// Cleanup legacy raw uploads from older versions that stored the original file.
+	await localforage.removeItem(name);
 	const current = await getCurrentSongName();
 	if (current === name) {
 		localStorage.removeItem("current-song-name");
@@ -104,22 +116,4 @@ export async function deleteSong(name: string): Promise<void> {
 export async function clearStorage(): Promise<void> {
 	await localforage.clear();
 	localStorage.removeItem("current-song-name");
-}
-
-/**
- * Lists all raw file names stored in IndexedDB.
- *
- * @returns An array of all keys in the localforage store
- */
-export async function listFileNames(): Promise<string[]> {
-	return await localforage.keys();
-}
-
-/**
- * Deletes a raw file from IndexedDB.
- *
- * @param name - The name of the file to delete
- */
-export async function deleteFile(name: string): Promise<void> {
-	await localforage.removeItem(name);
 }

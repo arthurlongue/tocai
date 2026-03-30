@@ -47,14 +47,10 @@ vi.mock("localforage", () => ({
 import type { Song } from "../domain/types";
 import {
 	clearStorage,
-	deleteFile,
 	deleteSong,
 	getCurrentSongName,
-	getFile,
 	getSong,
-	listFileNames,
 	listSongs,
-	saveFile,
 	saveSong,
 	setCurrentSong,
 } from "./storage";
@@ -67,11 +63,13 @@ function createTestSong(overrides: Partial<Song> = {}): Song {
 			artist: "Test Artist",
 			album: "Test Album",
 		},
+		keySignatures: [],
 		tracks: [
 			{
 				id: "track-1",
 				name: "Guitar",
 				tuning: [64, 59, 55, 50, 45, 40],
+				keySignatures: [],
 				notes: [
 					{
 						trackId: "track-1",
@@ -126,51 +124,12 @@ function createTestSong(overrides: Partial<Song> = {}): Song {
 }
 
 describe("Library Storage Service", () => {
-	const testFileName = "test-song.gp5";
 	const testFileData = new Blob(["dummy content"], {
 		type: "application/octet-stream",
 	});
 
 	beforeEach(async () => {
 		await clearStorage();
-	});
-
-	it("should save and retrieve a file", async () => {
-		await saveFile(testFileName, testFileData);
-		const retrieved = await getFile(testFileName);
-
-		expect(retrieved).not.toBeNull();
-		expect(retrieved?.size).toBe(testFileData.size);
-		expect(retrieved?.type).toBe(testFileData.type);
-
-		const text = await retrieved?.text();
-		expect(text).toBe("dummy content");
-	});
-
-	it("should return null for non-existent file", async () => {
-		const retrieved = await getFile("not-found.gp5");
-		expect(retrieved).toBeNull();
-	});
-
-	it("should list all stored file names", async () => {
-		await saveFile("song1.gp5", testFileData);
-		await saveFile("song2.gp5", testFileData);
-
-		const list = await listFileNames();
-		expect(list).toContain("song1.gp5");
-		expect(list).toContain("song2.gp5");
-		expect(list.length).toBe(2);
-	});
-
-	it("should delete a file", async () => {
-		await saveFile(testFileName, testFileData);
-		await deleteFile(testFileName);
-
-		const retrieved = await getFile(testFileName);
-		expect(retrieved).toBeNull();
-
-		const list = await listFileNames();
-		expect(list).not.toContain(testFileName);
 	});
 
 	it("should save and retrieve a parsed song", async () => {
@@ -214,15 +173,27 @@ describe("Library Storage Service", () => {
 		);
 	});
 
+	it("ignores legacy raw blobs that collide with the song key prefix", async () => {
+		mockStore.set("song-legacy.gp5", testFileData);
+		await saveSong("kept", createTestSong());
+
+		const list = await listSongs();
+
+		expect(list).toHaveLength(1);
+		expect(list[0]?.name).toBe("kept");
+	});
+
 	it("should delete a song and clear current reference if matching", async () => {
 		await saveSong(
 			"delete-me",
 			createTestSong({ metadata: { title: "X", artist: "Y", album: "Z" } }),
 		);
+		mockStore.set("delete-me", testFileData);
 		await setCurrentSong("delete-me");
 		await deleteSong("delete-me");
 		const retrieved = await getSong("delete-me");
 		expect(retrieved).toBeNull();
+		expect(mockStore.has("delete-me")).toBe(false);
 		const current = await getCurrentSongName();
 		expect(current).toBeNull();
 	});

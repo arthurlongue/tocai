@@ -622,4 +622,98 @@ describe("Renderer", () => {
 			expect(lineToCalls.length).toBeGreaterThan(10);
 		});
 	});
+
+	describe("Harmony labels", () => {
+		it("renders inferred chord labels above visible note groups", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [
+					{
+						pitch: 64,
+						startTime: 0,
+						duration: 1,
+						string: 0,
+						fret: 0,
+						techniques: {},
+					},
+					{
+						pitch: 60,
+						startTime: 0,
+						duration: 1,
+						string: 1,
+						fret: 1,
+						techniques: {},
+					},
+					{
+						pitch: 55,
+						startTime: 0,
+						duration: 1,
+						string: 2,
+						fret: 0,
+						techniques: {},
+					},
+				],
+				harmonyEvents: [
+					{
+						startTime: 0,
+						duration: 1,
+						label: "C/E",
+						root: 0,
+						bass: 4,
+						pitchClasses: [0, 4, 7],
+						anchorString: 0,
+						confidence: 0.9,
+						source: "inferred",
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+			renderer.drawAt(0);
+
+			expect(mockCtx.fillText).toHaveBeenCalledWith("C/E", 100, 16);
+			expect(mockCtx.strokeText).toHaveBeenCalledWith("C/E", 100, 16);
+		});
+
+		it("skips overlapping harmony labels to keep the lane readable", () => {
+			const mockTrack = {
+				id: "1",
+				name: "Test",
+				tuning: [82.41, 110.0, 146.83, 196.0, 246.94, 329.63],
+				notes: [],
+				harmonyEvents: [
+					{
+						startTime: 0,
+						duration: 1,
+						label: "C",
+						root: 0,
+						pitchClasses: [0, 4, 7],
+						anchorString: 0,
+						confidence: 0.9,
+						source: "inferred",
+					},
+					{
+						startTime: 0.12,
+						duration: 1,
+						label: "F",
+						root: 5,
+						pitchClasses: [0, 5, 9],
+						anchorString: 0,
+						confidence: 0.9,
+						source: "inferred",
+					},
+				],
+			};
+
+			const renderer = new Renderer(canvas);
+			renderer.setTrack(mockTrack as any);
+			renderer.drawAt(0);
+
+			expect(mockCtx.fillText).toHaveBeenCalledWith("C", 100, 16);
+			expect(mockCtx.fillText).not.toHaveBeenCalledWith("F", 124, 16);
+		});
+	});
 });

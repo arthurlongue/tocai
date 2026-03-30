@@ -48,7 +48,7 @@ describe("flattenSong", () => {
 			beats,
 			repeatStart,
 			repeatEnd,
-			keySignature: 0,
+			keySignature: { accidentalCount: 0, mode: "major" },
 			section: null,
 			repeatCount: repeatEnd ? 2 : 1,
 		}) as unknown as TabBar;
@@ -144,5 +144,87 @@ describe("flattenSong", () => {
 		expect(technique.hammerOn).toBe(true);
 		expect(technique.slide?.type).toBe("up");
 		expect(technique.bend?.value).toBe(1); // (4 - 0) / 4 = 1
+	});
+
+	it("omits disabled techniques from stored note data", () => {
+		const flattened = flattenSong(
+			mockSong([mockTrack([mockBar([mockBeat([mockNote(0, 5)])])])]),
+		);
+
+		expect(flattened.tracks[0].notes[0].techniques).toEqual({});
+	});
+
+	it("infers chord labels from simultaneous note attacks", () => {
+		const chordBeat = mockBeat([
+			mockNote(0, 0), // E
+			mockNote(1, 1), // C
+			mockNote(2, 0), // G
+		]);
+
+		const flattened = flattenSong(
+			mockSong([mockTrack([mockBar([chordBeat])])]),
+		);
+
+		expect(flattened.tracks[0].harmonyEvents).toEqual([
+			expect.objectContaining({
+				label: "C/G",
+				source: "inferred",
+				pitchClasses: [0, 4, 7],
+			}),
+		]);
+	});
+
+	it("skips chord inference on excluded track types", () => {
+		const vocalTrack = mockTrack([
+			mockBar([mockBeat([mockNote(0, 0), mockNote(1, 0)])]),
+		]);
+		vocalTrack.name = "Vocals - Voice Oohs";
+		vocalTrack.shortName = "Vocals";
+
+		const flattened = flattenSong(mockSong([vocalTrack]));
+
+		expect(flattened.tracks[0].harmonyEvents).toEqual([]);
+	});
+
+	it("captures distinct key-signature changes for tracks and the song", () => {
+		const introBar = mockBar([mockBeat([mockNote(0, 0)])], false, false, 0);
+		const verseBar = mockBar([mockBeat([mockNote(0, 2)])], false, false, 1);
+		verseBar.keySignature = { accidentalCount: 2, mode: "minor" };
+
+		const flattened = flattenSong(mockSong([mockTrack([introBar, verseBar])]));
+
+		expect(flattened.tracks[0].keySignatures).toEqual([
+			expect.objectContaining({
+				measureIndex: 0,
+				label: "C major",
+			}),
+			expect.objectContaining({
+				measureIndex: 1,
+				label: "B minor",
+			}),
+		]);
+		expect(flattened.keySignatures).toEqual(flattened.tracks[0].keySignatures);
+	});
+
+	it("marks song keys as track-specific when tracks disagree", () => {
+		const firstTrack = mockTrack([
+			mockBar([mockBeat([mockNote(0, 0)])], false, false, 0),
+		]);
+		const secondTrack = mockTrack([
+			mockBar([mockBeat([mockNote(0, 2)])], false, false, 0),
+		]);
+		secondTrack.id = "2";
+		secondTrack.name = "Lead Guitar";
+		secondTrack.bars[0].keySignature = { accidentalCount: 1, mode: "minor" };
+
+		const flattened = flattenSong(mockSong([firstTrack, secondTrack]));
+
+		expect(flattened.keySignaturesVaryByTrack).toBe(true);
+		expect(flattened.keySignatures).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ label: "C major" }),
+				expect.objectContaining({ label: "E minor" }),
+			]),
+		);
 	});
 });

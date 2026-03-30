@@ -2,7 +2,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Song } from "../domain/types";
 import { parseFile } from "../services/parser";
-import { saveFile, saveSong } from "../services/storage";
+import { saveSong } from "../services/storage";
 import { FileUpload } from "./FileUpload";
 
 vi.mock("../services/parser", () => ({
@@ -10,7 +10,6 @@ vi.mock("../services/parser", () => ({
 }));
 
 vi.mock("../services/storage", () => ({
-	saveFile: vi.fn(() => Promise.resolve()),
 	saveSong: vi.fn(() => Promise.resolve()),
 	setCurrentSong: vi.fn(() => Promise.resolve()),
 }));
@@ -21,6 +20,7 @@ const mockSong: Song = {
 		artist: "Test Artist",
 		album: "Test Album",
 	},
+	keySignatures: [],
 	tracks: [],
 	measures: [],
 	durationSeconds: 42,
@@ -90,6 +90,5 @@ describe("FileUpload", () => {
 
 		expect(onSongLoaded).not.toHaveBeenCalled();
 		expect(saveSong).not.toHaveBeenCalled();
-		expect(saveFile).not.toHaveBeenCalled();
 	});
 });

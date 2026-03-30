@@ -8,6 +8,10 @@ export interface Song {
 		artist: string;
 		album: string;
 	};
+	/** Ordered key-signature changes across the song after flattening repeats. */
+	keySignatures?: KeySignatureChange[];
+	/** Whether key-signature changes differ between tracks. */
+	keySignaturesVaryByTrack?: boolean;
 	/** All tracks in the song (e.g., guitar tracks, bass tracks). */
 	tracks: Track[];
 	/** Time measures that define the song's structure and timing. */
@@ -25,10 +29,30 @@ export interface Track {
 	id: string;
 	/** Display name of the track (e.g., "Guitar", "Bass"). */
 	name: string;
-	/** MIDI note numbers for each string (low to high string order). */
+	/** MIDI note numbers for each string in playback string-index order. */
 	tuning: number[];
+	/** Ordered key-signature changes for this track after flattening repeats. */
+	keySignatures?: KeySignatureChange[];
 	/** Flattened array of all notes to be played in this track. */
 	notes: PlaybackNote[];
+	/** Optional beat-level harmony labels inferred from simultaneous note attacks. */
+	harmonyEvents?: HarmonyEvent[];
+}
+
+/**
+ * A normalized key-signature change anchored to a measure/start time.
+ */
+export interface KeySignatureChange {
+	/** Zero-based measure index in the flattened playback order. */
+	measureIndex: number;
+	/** Start time of the measure in seconds from the beginning of the song. */
+	startTime: number;
+	/** Human-readable key label such as C major or E minor. */
+	label: string;
+	/** Number of sharps or flats where negatives are flats and positives are sharps. */
+	accidentalCount: number;
+	/** Modal quality of the key signature. */
+	mode: "major" | "minor";
 }
 
 /**
@@ -70,6 +94,31 @@ export interface PlaybackNote {
 	fret: number;
 	/** Special playing techniques applied to this note. */
 	techniques: NoteTechniques;
+}
+
+/**
+ * A derived harmony label for notes that start together on the same beat.
+ * This augments tablature playback data without replacing the original notes.
+ */
+export interface HarmonyEvent {
+	/** Start time of the chord attack in seconds from the beginning of the song. */
+	startTime: number;
+	/** Duration of the chord event in seconds. */
+	duration: number;
+	/** Human-readable chord label such as G, Am7, or D/F#. */
+	label: string;
+	/** Pitch class of the inferred root note where C = 0 and B = 11. */
+	root: number;
+	/** Optional bass pitch class when the voicing is an inversion/slash chord. */
+	bass?: number;
+	/** Unique pitch classes that define this harmony event. */
+	pitchClasses: number[];
+	/** String index used to position the label near the chord voicing. */
+	anchorString: number;
+	/** Confidence score from 0 to 1 for the inferred label. */
+	confidence: number;
+	/** Whether the label came from the source file or inference. */
+	source: "authored" | "inferred";
 }
 
 /**

@@ -2,7 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import type { Song } from "../domain/types";
 import { parseFile } from "../services/parser";
-import { saveFile, saveSong, setCurrentSong } from "../services/storage";
+import { saveSong, setCurrentSong } from "../services/storage";
 import { Input } from "./ui/input";
 
 interface FileUploadProps {
@@ -29,7 +29,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 			const song = await parseFile(file);
 			onSongLoaded(song, file.name);
 			await saveSong(file.name, song);
-			await saveFile(file.name, file);
 			await setCurrentSong(file.name);
 			onSongSaved?.();
 		} catch (err) {
