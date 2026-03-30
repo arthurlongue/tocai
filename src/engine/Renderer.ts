@@ -12,7 +12,7 @@ import {
 import { calculateVisibleNotes, getNoteX, getNoteY } from "./layout";
 import { getPlaybackTimelineTime } from "./playbackTimeline";
 
-// Pre-parse note colors into RGB for tail alpha compositing
+/** Pre-parse note colors into RGB for tail alpha compositing. */
 function hexToRgb(hex: string): string {
 	const r = Number.parseInt(hex.slice(1, 3), 16);
 	const g = Number.parseInt(hex.slice(3, 5), 16);
@@ -21,6 +21,16 @@ function hexToRgb(hex: string): string {
 }
 const STRING_COLORS_RGB = STRING_COLORS.map(hexToRgb);
 
+/**
+ * Canvas-based tablature renderer.
+ *
+ * Renders a scrolling guitar tablature view similar to Rocksmith or Synthesia,
+ * with notes approaching a "hit line" from the right side of the screen.
+ * The renderer uses `requestAnimationFrame` for smooth 60fps animation and
+ * polls `Tone.Transport.seconds` directly for time (avoiding React state).
+ *
+ * Supports HiDPI displays by scaling the canvas using `window.devicePixelRatio`.
+ */
 export class Renderer {
 	private canvas: HTMLCanvasElement;
 	private ctx: CanvasRenderingContext2D;
@@ -40,6 +50,11 @@ export class Renderer {
 	private frameCount: number = 0;
 	private fpsLastUpdate: number = 0;
 
+	/**
+	 * Creates a new Renderer instance.
+	 * @param canvas - The HTML canvas element to render to
+	 * @throws Error if the 2D context cannot be obtained
+	 */
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
 		const ctx = canvas.getContext("2d", { alpha: false });
@@ -49,6 +64,10 @@ export class Renderer {
 		this.ctx = ctx;
 	}
 
+	/**
+	 * Sets the track to render.
+	 * @param track - The track containing notes to display
+	 */
 	setTrack(track: Track): void {
 		this.track = track;
 		this.maxNoteDuration = track.notes.reduce(
@@ -58,27 +77,38 @@ export class Renderer {
 	}
 
 	/**
-	 * Set playback speed multiplier for visual synchronization
+	 * Sets the playback speed multiplier for visual synchronization.
+	 * @param speed - Speed multiplier (e.g., 0.5 = half speed, 2 = double speed)
 	 */
 	setSpeed(speed: number): void {
 		this.speed = speed;
 	}
 
 	/**
-	 * Get current speed multiplier
+	 * Gets the current speed multiplier.
+	 * @returns The current speed setting
 	 */
 	getSpeed(): number {
 		return this.speed;
 	}
 
+	/**
+	 * No-op for backwards compatibility.
+	 * Tone.Transport.seconds is the authoritative time source.
+	 */
 	resetTime(_time: number = 0): void {
 		// No-op: Tone.Transport.seconds is authoritative
 	}
 
+	/**
+	 * No-op for backwards compatibility.
+	 * Tone.Transport.seconds is the authoritative time source.
+	 */
 	initTime(): void {
 		// No-op: Tone.Transport.seconds is authoritative
 	}
 
+	/** Animation loop callback bound to this instance. */
 	private loop = (timestamp: number): void => {
 		this.updateFPS(timestamp);
 		this.draw();
@@ -87,6 +117,7 @@ export class Renderer {
 		}
 	};
 
+	/** Updates FPS tracking counters. */
 	private updateFPS(timestamp: number): void {
 		if (!this.lastFrameTime) {
 			this.lastFrameTime = timestamp;
@@ -105,12 +136,20 @@ export class Renderer {
 		this.lastFrameTime = timestamp;
 	}
 
+	/**
+	 * Starts the render loop.
+	 * Call this when playback begins.
+	 */
 	start(): void {
 		if (this.frameId === null) {
 			this.frameId = window.requestAnimationFrame(this.loop);
 		}
 	}
 
+	/**
+	 * Stops the render loop.
+	 * Call this when playback pauses or stops.
+	 */
 	stop(): void {
 		if (this.frameId !== null) {
 			window.cancelAnimationFrame(this.frameId);
@@ -118,6 +157,10 @@ export class Renderer {
 		}
 	}
 
+	/**
+	 * Draws a single frame using the current Tone.Transport time.
+	 * Applies audio latency compensation for accurate visual sync.
+	 */
 	draw(): void {
 		const context = Tone.getContext();
 		const latency = (context.rawContext as AudioContext).outputLatency || 0;
@@ -128,10 +171,17 @@ export class Renderer {
 		this.renderFrame(getPlaybackTimelineTime(rawTransportTime - delay));
 	}
 
+	/**
+	 * Draws a single frame at a specific time.
+	 * @param currentTime - The song time to render at (in seconds)
+	 */
 	drawAt(currentTime: number): void {
 		this.renderFrame(currentTime);
 	}
 
+	/**
+	 * Renders the complete frame for the given time.
+	 */
 	private renderFrame(currentTime: number): void {
 		const dpr = window.devicePixelRatio || 1;
 		const width = this.canvas.width / dpr;
@@ -226,6 +276,7 @@ export class Renderer {
 		}
 	}
 
+	/** Renders the FPS counter in the top-right corner (dev mode only). */
 	private renderFPS(width: number): void {
 		this.ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
 		this.ctx.font = "bold 12px monospace";
@@ -234,6 +285,10 @@ export class Renderer {
 		this.ctx.fillText(`${this.fps} FPS`, width - 10, 10);
 	}
 
+	/**
+	 * Renders all notes for a single string lane.
+	 * Draws tails, fret numbers, and technique indicators.
+	 */
 	private drawNotesInString(
 		notes: PlaybackNote[],
 		stringIndex: number,

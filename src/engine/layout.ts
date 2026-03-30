@@ -1,6 +1,12 @@
 import type { PlaybackNote } from "../domain/types";
 import { HIT_LINE_X, PIXELS_PER_SECOND } from "./constants";
 
+/**
+ * Binary search helper to find the first note that starts at or after a target time.
+ * @param notes - Sorted array of playback notes by startTime
+ * @param targetTime - The time to search for
+ * @returns Index of the first matching note, or notes.length if none found
+ */
 const findFirstNoteStartingAtOrAfter = (
 	notes: PlaybackNote[],
 	targetTime: number,
@@ -20,6 +26,12 @@ const findFirstNoteStartingAtOrAfter = (
 	return low;
 };
 
+/**
+ * Binary search helper to find the first note that starts strictly after a target time.
+ * @param notes - Sorted array of playback notes by startTime
+ * @param targetTime - The time to search for
+ * @returns Index of the first note after target, or notes.length if none found
+ */
 const findFirstNoteStartingAfter = (
 	notes: PlaybackNote[],
 	targetTime: number,
@@ -40,24 +52,36 @@ const findFirstNoteStartingAfter = (
 };
 
 /**
- * Calculates X coordinate relative to hit-line
+ * Calculates the X coordinate of a note relative to the hit-line.
+ *
+ * @param startTime - When the note starts (in seconds)
+ * @param currentTime - The current playback time (in seconds)
+ * @returns The X coordinate in pixels where the note should be drawn
  */
 export function getNoteX(startTime: number, currentTime: number): number {
 	return HIT_LINE_X + (startTime - currentTime) * PIXELS_PER_SECOND;
 }
 
 /**
- * Calculates Y coordinate for a string lane
- * 0 is highest string index (lowest pitch), 5 is lowest string index (highest pitch)
- * We want string 0 (E low) at the bottom and string 5 (E high) at the top.
+ * Calculates the Y coordinate for a note in its string lane.
+ *
+ * @param stringIndex - 0-based string index (0 = lowest string E, 5 = highest string e)
+ * @param laneHeight - Height of each string lane in pixels
+ * @returns The Y coordinate in pixels for the center of the string lane
  */
 export function getNoteY(stringIndex: number, laneHeight: number): number {
-	// stringIndex 0 -> top, 5 -> bottom
 	return stringIndex * laneHeight + laneHeight / 2;
 }
 
 /**
- * Returns notes that overlap the current viewport plus a small buffer
+ * Returns all notes that are visible (or potentially visible) within the current viewport.
+ * Includes a buffer zone to prevent pop-in when scrolling.
+ *
+ * @param notes - All playback notes to filter
+ * @param currentTime - The current playback time (in seconds)
+ * @param viewportWidth - Width of the viewport in pixels
+ * @param maxNoteDuration - Maximum note duration to consider for buffer calculation
+ * @returns Array of notes that overlap the visible time range
  */
 export function calculateVisibleNotes(
 	notes: PlaybackNote[],

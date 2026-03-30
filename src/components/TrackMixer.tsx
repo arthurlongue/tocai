@@ -28,19 +28,17 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 	backingTracksVolume,
 	onBackingTracksVolumeChange,
 }) => {
-	const [isCollapsed, setIsCollapsed] = useState(() =>
-		typeof window !== "undefined" ? window.innerWidth < 768 : false,
-	);
+	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	return (
 		<div className="w-full flex flex-col gap-3 p-1">
-			<div className="flex flex-wrap justify-between items-center px-1 gap-y-2">
-				<div className="flex flex-wrap items-center gap-2 md:gap-4 shrink-0">
-					<h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mr-1 md:mr-2">
+			<div className="flex justify-between items-center px-1">
+				<div className="flex items-center gap-4">
+					<h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">
 						Tracks
 					</h3>
 					{!isCollapsed && (
-						<div className="flex flex-wrap items-center gap-2 md:gap-4">
+						<div className="flex items-center gap-4">
 							<Button
 								variant={soloActive ? "default" : "outline"}
 								size="xs"
@@ -51,8 +49,8 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 								Solo Mode {soloActive ? "ON" : "OFF"}
 							</Button>
 
-							<div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded-lg shadow-sm font-bold shrink-0">
-								<Volume2 className="size-3 text-primary shrink-0" />
+							<div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded-lg shadow-sm font-bold">
+								<Volume2 className="size-3 text-primary" />
 								<span className="text-[10px] text-foreground uppercase tracking-tighter">
 									Backing
 								</span>
@@ -64,7 +62,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 									step={0.05}
 									variant="triangular"
 									onValueChange={(v) => onBackingTracksVolumeChange(v[0])}
-									className="w-16 md:w-20 h-8"
+									className="w-20 h-8"
 								/>
 							</div>
 						</div>
@@ -73,7 +71,7 @@ export const TrackMixer: React.FC<TrackMixerProps> = ({
 				<Button
 					variant="ghost"
 					size="sm"
-					className="h-8 px-2 shrink-0 md:ml-auto text-foreground hover:bg-muted/50 cursor-pointer"
+					className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer"
 					onClick={() => setIsCollapsed(!isCollapsed)}
 					aria-expanded={!isCollapsed}
 				>
