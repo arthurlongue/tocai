@@ -1,8 +1,20 @@
-import { ChevronDown, ChevronUp, Music, Play, Trash2, XCircle } from "lucide-react";
+import {
+	ChevronDown,
+	ChevronUp,
+	Music,
+	Play,
+	Trash2,
+	XCircle,
+} from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import type { Song } from "../domain/types";
-import { clearStorage, deleteSong, listSongs, setCurrentSong } from "../services/storage";
+import {
+	clearStorage,
+	deleteSong,
+	listSongs,
+	setCurrentSong,
+} from "../services/storage";
 import { Button } from "./ui/button";
 
 interface LibraryProps {
@@ -20,7 +32,9 @@ export const Library: React.FC<LibraryProps> = ({
 }) => {
 	const [songs, setSongs] = useState<{ name: string; song: Song }[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(() =>
+		typeof window !== "undefined" ? window.innerWidth < 768 : false,
+	);
 
 	const loadLibrary = useCallback(async () => {
 		setIsLoading(true);
@@ -39,6 +53,7 @@ export const Library: React.FC<LibraryProps> = ({
 	}, [loadLibrary]);
 
 	// Trigger reload when libraryRefreshKey changes (e.g., after uploading a new song)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Refreshes library explicitly on key change
 	useEffect(() => {
 		void loadLibrary();
 	}, [loadLibrary, libraryRefreshKey]);
@@ -76,32 +91,32 @@ export const Library: React.FC<LibraryProps> = ({
 	}
 
 	return (
-		<div className="w-full max-w-4xl mx-auto mt-12 p-6 bg-card rounded-2xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]">
+		<div className="w-full max-w-4xl mx-auto mt-12 p-4 md:p-6 bg-card rounded-2xl shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)]">
 			{/* Header */}
-			<div className="flex justify-between items-center mb-0">
-				<h2 className="text-2xl font-bold flex items-center gap-2">
-					<Music className="w-6 h-6" />
+			<div className="flex flex-wrap justify-between items-center gap-y-3 mb-0">
+				<h2 className="text-xl md:text-2xl font-bold flex flex-wrap items-center gap-2 w-full sm:w-auto">
+					<Music className="w-6 h-6 shrink-0" />
 					Your Library
-					<span className="ml-1 text-sm font-medium text-foreground/70">
+					<span className="ml-1 text-xs md:text-sm font-medium text-foreground/70 shrink-0">
 						({songs.length})
 					</span>
 				</h2>
-				<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center gap-2 ml-auto">
 					{!isCollapsed && (
 						<Button
 							variant="ghost"
 							size="sm"
 							onClick={handleClear}
-							className="text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+							className="text-destructive/70 hover:text-destructive hover:bg-destructive/10 cursor-pointer text-xs md:text-sm h-8 px-2"
 						>
-							<XCircle className="w-4 h-4 mr-2" />
-							Clear Library
+							<XCircle className="w-4 h-4 mr-1 md:mr-2" />
+							Clear <span className="hidden md:inline ml-1">Library</span>
 						</Button>
 					)}
 					<Button
 						variant="ghost"
 						size="sm"
-						className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer"
+						className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer text-xs md:text-sm"
 						onClick={() => setIsCollapsed(!isCollapsed)}
 						aria-expanded={!isCollapsed}
 					>

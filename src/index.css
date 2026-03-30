@@ -4,27 +4,27 @@
 	/* Mapping Tailwind utility classes to CSS variables for dynamic theming */
 	--color-background: var(--bg-main);
 	--color-foreground: var(--text-main);
-	
+
 	--color-surface: var(--surface);
 	--color-surface-elevated: var(--surface-elevated);
-	
+
 	--color-card: var(--surface);
 	--color-card-foreground: var(--text-main);
 
 	--color-popover: var(--surface-elevated);
 	--color-popover-foreground: var(--text-main);
-	
+
 	--color-primary: var(--primary);
 	--color-primary-foreground: var(--primary-foreground);
-	
+
 	--color-muted: var(--muted);
 	--color-muted-foreground: var(--muted-foreground);
-	
+
 	--color-border: var(--border);
-	
+
 	--color-text-primary: var(--text-main);
 	--color-text-secondary: var(--muted-foreground);
-	
+
 	--color-canvas: var(--canvas);
 }
 
@@ -76,14 +76,15 @@
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-
-	@media (max-width: 1024px) {
-		font-size: 16px;
-	}
 }
 
 html {
 	font-size: 16px;
+	overflow-x: hidden;
+}
+
+body {
+	overflow-x: hidden;
 }
 
 #social .button-icon {

@@ -62,40 +62,10 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 	const isPlaying = transportStatus === "started";
 
 	return (
-		<div className="relative z-40 w-full bg-surface shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.5)] p-4 transport-bar">
-			<div className="flex flex-wrap items-center gap-4">
-				{/* Playback Controls */}
-				<div className="flex gap-2">
-					<Button
-						onClick={isPlaying ? pause : play}
-						variant="secondary"
-						className="min-w-[100px] h-11 cursor-pointer"
-						aria-label={isPlaying ? "Pause" : "Play"}
-					>
-						{isPlaying ? (
-							<>
-								<Pause className="w-5 h-5 mr-2" />
-								PAUSE
-							</>
-						) : (
-							<>
-								<Play className="w-5 h-5 mr-2" />
-								PLAY
-							</>
-						)}
-					</Button>
-					<Button
-						onClick={stop}
-						variant="destructive"
-						className="size-11 cursor-pointer"
-						aria-label="Stop"
-					>
-						<Square className="w-5 h-5" />
-					</Button>
-				</div>
-
-				{/* Seek Bar */}
-				<div className="flex-1 min-w-[200px] flex items-center gap-2">
+		<div className="relative z-40 w-full bg-surface shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.5)] p-2 md:p-4 transport-bar">
+			<div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
+				{/* Seek Bar + Time (Always together, Top on Mobile) */}
+				<div className="flex-1 w-full flex items-center gap-3 lg:order-2">
 					<Slider
 						aria-label="Seek"
 						value={[currentTime]}
@@ -104,43 +74,76 @@ export const TransportBar: React.FC<TransportBarProps> = ({
 						onValueChange={handleSeekChange}
 						className="flex-1 h-8"
 					/>
-					<span className="text-sm text-foreground font-medium min-w-[80px] text-right">
+					<span className="text-xs sm:text-sm text-foreground font-mono w-[72px] sm:w-20 text-right whitespace-nowrap shrink-0 lg:min-w-[84px]">
 						{formatTime(currentTime)} / {formatTime(songDuration)}
 					</span>
 				</div>
 
-				{/* Speed Control */}
-				<div className="flex items-center gap-2">
-					<Gauge className="w-4 h-4 text-primary" />
-					<Slider
-						aria-label="Speed"
-						value={[speed]}
-						min={0.25}
-						max={2}
-						step={0.25}
-						onValueChange={(v) => onSpeedChange(v[0])}
-						className="w-32 h-8"
-					/>
-					<span className="text-sm min-w-[40px]">{speed.toFixed(2)}x</span>
+				{/* Controls Group: Play, Stop, Speed, Volume */}
+				<div className="flex items-center justify-between lg:contents gap-2">
+					<div className="flex items-center gap-1 sm:gap-2 lg:order-1 shrink-0">
+						<Button
+							onClick={isPlaying ? pause : play}
+							variant="secondary"
+							className="px-0 md:px-4 min-w-[40px] md:min-w-[100px] h-9 md:h-11 cursor-pointer"
+							aria-label={isPlaying ? "Pause" : "Play"}
+						>
+							{isPlaying ? (
+								<>
+									<Pause className="w-4 h-4 md:w-5 md:h-5 md:mr-2" />
+									<span className="hidden md:inline">PAUSE</span>
+								</>
+							) : (
+								<>
+									<Play className="w-4 h-4 md:w-5 md:h-5 md:mr-2" />
+									<span className="hidden md:inline">PLAY</span>
+								</>
+							)}
+						</Button>
+						<Button
+							onClick={stop}
+							variant="destructive"
+							className="size-9 md:size-11 cursor-pointer p-0"
+							aria-label="Stop"
+						>
+							<Square className="w-4 h-4 md:w-5 md:h-5" />
+						</Button>
+					</div>
+
+					<div className="flex items-center gap-3 sm:gap-4 lg:order-3 shrink-0">
+						{/* Speed Control */}
+						<div className="flex items-center gap-1.5 sm:gap-2">
+							<Gauge className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary shrink-0" />
+							<Slider
+								aria-label="Speed"
+								value={[speed]}
+								min={0.25}
+								max={2}
+								step={0.25}
+								onValueChange={(v) => onSpeedChange(v[0])}
+								className="w-14 sm:w-24 md:w-32 h-8"
+							/>
+							<span className="text-[10px] sm:text-xs md:text-sm w-7 sm:w-10 shrink-0 text-right">
+								{speed.toFixed(2)}x
+							</span>
+						</div>
+
+						{/* Selected-track Volume */}
+						<div className="flex items-center gap-1.5 sm:gap-2">
+							<Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary shrink-0" />
+							<Slider
+								aria-label="Selected Track Volume"
+								value={[selectedTrackVolume]}
+								min={0}
+								max={1}
+								step={0.05}
+								variant="triangular"
+								onValueChange={(v) => onSelectedTrackVolumeChange(v[0])}
+								className="w-14 sm:w-20 md:w-24 h-8"
+							/>
+						</div>
+					</div>
 				</div>
-
-				{/* Selected-track Volume */}
-				<div className="flex items-center gap-2">
-					<Volume2 className="w-4 h-4 text-primary" />
-					<Slider
-						aria-label="Selected Track Volume"
-						value={[selectedTrackVolume]}
-						min={0}
-						max={1}
-						step={0.05}
-						variant="triangular"
-						onValueChange={(v) => onSelectedTrackVolumeChange(v[0])}
-						className="w-24 h-8"
-					/>
-				</div>
-
-
-				{/* Removed Track Selector and Solo from here since it's now in TrackMixer */}
 			</div>
 		</div>
 	);

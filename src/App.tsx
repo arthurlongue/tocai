@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp, Clock, Layers, Music2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { FileUpload } from "./components/FileUpload";
 import { Library } from "./components/Library";
@@ -10,7 +11,6 @@ import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
 import { useSpeedControl } from "./hooks/useSpeedControl";
-import { ChevronDown, ChevronUp, Clock, Layers, Music2 } from "lucide-react";
 import {
 	getCurrentSongName,
 	getSong,
@@ -22,12 +22,14 @@ function App() {
 	const [currentSongName, setCurrentSongName] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
-	const [soloActive, setSoloActive] = useState(false);
+	const [soloActive, setSoloActive] = useState(true);
 	const [trackMutes, setTrackMutes] = useState<Record<string, boolean>>({});
 	const [selectedTrackVolume, setSelectedTrackVolume] = useState(0.8);
-	const [backingTracksVolume, setBackingTracksVolume] = useState(0.8);
+	const [backingTracksVolume, setBackingTracksVolume] = useState(0.3);
 	const [libraryRefreshKey, setLibraryRefreshKey] = useState(0);
-	const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(false);
+	const [isMetadataCollapsed, setIsMetadataCollapsed] = useState(() =>
+		typeof window !== "undefined" ? window.innerWidth < 768 : false,
+	);
 
 	const { seek } = usePlayback();
 	const { speed, setSpeed, resetSpeed } = useSpeedControl();
@@ -72,7 +74,7 @@ function App() {
 		}
 		// Reset selection state when song identity changes
 		setSelectedTrackIndex(0);
-		setSoloActive(false);
+		setSoloActive(true);
 	}, [song, engine, resetSpeed]);
 
 	const currentTrack = song?.tracks[selectedTrackIndex];
@@ -165,28 +167,38 @@ function App() {
 					{/* Song Metadata Card */}
 					<div className="w-full max-w-2xl mx-auto rounded-2xl bg-card shadow-[0_8px_32px_-4px_rgba(0,0,0,0.5)] overflow-hidden">
 						{/* Card Header — always visible */}
-						<div className="flex items-center justify-between px-6 pt-5 pb-4">
-							<div className="flex items-center gap-3 min-w-0">
+						<div className="flex flex-wrap items-center justify-between gap-y-3 px-4 md:px-6 pt-4 md:pt-5 pb-4">
+							<div className="flex items-center gap-3 min-w-0 flex-1">
 								<div className="flex items-center justify-center size-10 rounded-xl bg-primary/15 shrink-0">
 									<Music2 className="size-5 text-primary" />
 								</div>
-								<div className="min-w-0">
-									<h2 className="text-xl font-bold truncate leading-tight text-foreground">{song.metadata.title || currentSongName}</h2>
-									<p className="text-sm text-foreground/80 truncate">{song.metadata.artist || "Unknown Artist"}</p>
+								<div className="min-w-0 pr-2">
+									<h2 className="text-lg md:text-xl font-bold truncate leading-tight text-foreground">
+										{song.metadata.title || currentSongName}
+									</h2>
+									<p className="text-xs md:text-sm text-foreground/80 truncate">
+										{song.metadata.artist || "Unknown Artist"}
+									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-1 shrink-0 ml-4">
+							<div className="flex items-center gap-1 shrink-0">
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer"
+									className="h-8 px-2 text-foreground hover:bg-muted/50 cursor-pointer text-xs md:text-sm"
 									onClick={() => setIsMetadataCollapsed(!isMetadataCollapsed)}
 									aria-expanded={!isMetadataCollapsed}
 								>
 									{isMetadataCollapsed ? (
-										<><ChevronDown className="size-4 mr-1" />Show</>
+										<>
+											<ChevronDown className="size-4 mr-1" />
+											Show
+										</>
 									) : (
-										<><ChevronUp className="size-4 mr-1" />Collapse</>
+										<>
+											<ChevronUp className="size-4 mr-1" />
+											Collapse
+										</>
 									)}
 								</Button>
 							</div>
@@ -199,13 +211,21 @@ function App() {
 								<div className="flex flex-wrap gap-2 mb-5">
 									<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 rounded-lg shadow-sm">
 										<Clock className="size-3.5 text-primary" />
-										<span className="text-xs font-semibold text-foreground">Duration</span>
-										<span className="text-xs font-bold ml-1">{formatDuration(song.durationSeconds)}</span>
+										<span className="text-xs font-semibold text-foreground">
+											Duration
+										</span>
+										<span className="text-xs font-bold ml-1">
+											{formatDuration(song.durationSeconds)}
+										</span>
 									</div>
 									<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 rounded-lg shadow-sm">
 										<Layers className="size-3.5 text-primary" />
-										<span className="text-xs font-semibold text-foreground">Tracks</span>
-										<span className="text-xs font-bold ml-1">{song.tracks.length}</span>
+										<span className="text-xs font-semibold text-foreground">
+											Tracks
+										</span>
+										<span className="text-xs font-bold ml-1">
+											{song.tracks.length}
+										</span>
 									</div>
 								</div>
 								<Button
@@ -216,7 +236,7 @@ function App() {
 										setSong(null);
 										setCurrentSongName(null);
 										setSelectedTrackIndex(0);
-										setSoloActive(false);
+										setSoloActive(true);
 										void setCurrentSong("");
 									}}
 									className="w-full h-10 text-foreground hover:text-primary transition-colors text-sm underline decoration-1 underline-offset-4"
@@ -279,7 +299,7 @@ function App() {
 					setSong(null);
 					setCurrentSongName(null);
 					setSelectedTrackIndex(0);
-					setSoloActive(false);
+					setSoloActive(true);
 				}}
 				libraryRefreshKey={libraryRefreshKey}
 			/>
