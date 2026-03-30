@@ -354,8 +354,7 @@ export class Renderer {
 				this.ctx.moveTo(startX, vibratoY);
 				for (let i = 1; i <= waveSegments; i++) {
 					const wx = startX + (waveLength / waveSegments) * i;
-					const wy =
-						vibratoY + (i % 2 === 1 ? -waveAmplitude : waveAmplitude);
+					const wy = vibratoY + (i % 2 === 1 ? -waveAmplitude : waveAmplitude);
 					this.ctx.lineTo(wx, wy);
 				}
 				this.ctx.stroke();

@@ -76,8 +76,6 @@ describe("Minimap", () => {
 		expect(canvas).not.toBeNull();
 	});
 
-
-
 	it("draws idle frames from the shared playback timeline", () => {
 		timelineTime = 18.5;
 		const track = createMockTrack();

@@ -4,11 +4,7 @@
 
 import * as Tone from "tone";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	HIT_LINE_X,
-	NOTE_HEIGHT,
-	STRING_COLORS,
-} from "./constants";
+import { HIT_LINE_X, NOTE_HEIGHT, STRING_COLORS } from "./constants";
 import {
 	resetPlaybackTimelineState,
 	setPlaybackTimelineSpeed,
@@ -63,7 +59,7 @@ describe("Renderer", () => {
 		textBaselineHistory = [];
 		shadowColorHistory = [];
 		shadowBlurHistory = [];
-		
+
 		vi.mocked(Tone.getTransport).mockReturnValue({
 			seconds: 0,
 		} as unknown as any);
@@ -189,7 +185,9 @@ describe("Renderer", () => {
 
 		vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
 			function getContext(this: HTMLCanvasElement) {
-				return (this === canvas ? mockCtx : staticMockCtx) as unknown as CanvasRenderingContext2D;
+				return (this === canvas
+					? mockCtx
+					: staticMockCtx) as unknown as CanvasRenderingContext2D;
 			},
 		);
 	});
@@ -602,10 +600,18 @@ describe("Renderer", () => {
 			renderer.drawAt(0);
 
 			// Check for "H" label
-			expect(mockCtx.fillText).toHaveBeenCalledWith("H", expect.any(Number), expect.any(Number));
-			
+			expect(mockCtx.fillText).toHaveBeenCalledWith(
+				"H",
+				expect.any(Number),
+				expect.any(Number),
+			);
+
 			// Check for Bend arrow
-			expect(mockCtx.fillText).toHaveBeenCalledWith("⤴", expect.any(Number), expect.any(Number));
+			expect(mockCtx.fillText).toHaveBeenCalledWith(
+				"⤴",
+				expect.any(Number),
+				expect.any(Number),
+			);
 
 			// Check for Slide line (beginPath + moveTo + lineTo + stroke)
 			expect(mockCtx.beginPath).toHaveBeenCalled();
