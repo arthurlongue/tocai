@@ -1,9 +1,4 @@
-import {
-	act,
-	cleanup,
-	render,
-	screen,
-} from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import {
 	afterEach,
 	beforeAll,

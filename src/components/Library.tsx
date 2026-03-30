@@ -1,8 +1,20 @@
-import { ChevronDown, ChevronUp, Music, Play, Trash2, XCircle } from "lucide-react";
+import {
+	ChevronDown,
+	ChevronUp,
+	Music,
+	Play,
+	Trash2,
+	XCircle,
+} from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import type { Song } from "../domain/types";
-import { clearStorage, deleteSong, listSongs, setCurrentSong } from "../services/storage";
+import {
+	clearStorage,
+	deleteSong,
+	listSongs,
+	setCurrentSong,
+} from "../services/storage";
 import { Button } from "./ui/button";
 
 interface LibraryProps {

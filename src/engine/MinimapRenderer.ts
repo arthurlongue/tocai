@@ -1,7 +1,7 @@
 import type { Track } from "../domain/types";
 import { STRING_COLORS, STRING_COUNT } from "./constants";
 
-// Pre-parse colors for alpha compositing
+/** Pre-parse colors for alpha compositing. */
 function hexToRgb(hex: string): string {
 	const r = Number.parseInt(hex.slice(1, 3), 16);
 	const g = Number.parseInt(hex.slice(3, 5), 16);
@@ -10,11 +10,20 @@ function hexToRgb(hex: string): string {
 }
 const STRING_COLORS_RGB = STRING_COLORS.map(hexToRgb);
 
-// A note in the minimap should look like a thin tick representing the attack,
-// not a fat block that spans the full sustain duration.
-// We cap the displayed width so the minimap shows density, not duration.
+/**
+ * A note in the minimap should look like a thin tick representing the attack,
+ * not a fat block that spans the full sustain duration.
+ * We cap the displayed width so the minimap shows density, not duration.
+ */
 const MINIMAP_NOTE_MAX_FRACTION = 0.12; // max fraction of laneHeight for note width
 
+/**
+ * Minimap renderer for song navigation.
+ *
+ * Renders a compact overview of the entire song showing all notes as colored ticks.
+ * Uses a static layer for the background and notes, and only redraws the playhead
+ * position during playback for better performance.
+ */
 export class MinimapRenderer {
 	private canvas: HTMLCanvasElement;
 	private ctx: CanvasRenderingContext2D;
@@ -28,6 +37,11 @@ export class MinimapRenderer {
 	private frameCount: number = 0;
 	private fpsLastUpdate: number = 0;
 
+	/**
+	 * Creates a new MinimapRenderer.
+	 * @param canvas - The HTML canvas element to render to
+	 * @throws Error if the 2D context cannot be obtained
+	 */
 	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
 		const ctx = canvas.getContext("2d", { alpha: false });
@@ -37,6 +51,11 @@ export class MinimapRenderer {
 		this.ctx = ctx;
 	}
 
+	/**
+	 * Sets the track to render in the minimap.
+	 * @param track - The track containing notes to display
+	 * @param songDuration - Optional explicit song duration; calculated from track if not provided
+	 */
 	setTrack(track: Track, songDuration?: number): void {
 		this.track = track;
 		this.songDuration = songDuration ?? this.calculateSongDuration(track);
@@ -44,6 +63,7 @@ export class MinimapRenderer {
 		this.draw();
 	}
 
+	/** Calculates the total duration of the song from the track's notes. */
 	private calculateSongDuration(track: Track): number {
 		if (track.notes.length === 0) return 0;
 		return track.notes.reduce(
@@ -52,6 +72,7 @@ export class MinimapRenderer {
 		);
 	}
 
+	/** Updates FPS tracking counters. */
 	private updateFPS(): void {
 		const timestamp = performance.now();
 		if (!this.lastFrameTime) {
@@ -71,6 +92,10 @@ export class MinimapRenderer {
 		this.lastFrameTime = timestamp;
 	}
 
+	/**
+	 * Draws the minimap at the current playback position.
+	 * @param currentTime - Current song time in seconds (default: 0)
+	 */
 	draw(currentTime: number = 0): void {
 		if (!this.track || this.songDuration === 0) return;
 
@@ -122,6 +147,10 @@ export class MinimapRenderer {
 		this.ctx.restore();
 	}
 
+	/**
+	 * Gets or creates a cached static layer canvas for the background.
+	 * The static layer contains elements that don't change between frames.
+	 */
 	private getOrCreateStaticLayer(
 		dpr: number,
 		width: number,
@@ -162,6 +191,9 @@ export class MinimapRenderer {
 		return layerCanvas;
 	}
 
+	/**
+	 * Draws the static elements: background, string lanes, and note ticks.
+	 */
 	private drawStaticLayer(
 		context: CanvasRenderingContext2D,
 		width: number,
@@ -217,6 +249,9 @@ export class MinimapRenderer {
 		);
 	}
 
+	/**
+	 * Draws the playhead and the "played" overlay to the left of it.
+	 */
 	private drawPlayhead(
 		width: number,
 		height: number,
@@ -250,12 +285,20 @@ export class MinimapRenderer {
 		this.ctx.stroke();
 	}
 
+	/** Formats seconds into M:SS format. */
 	private formatDuration(seconds: number): string {
 		const mins = Math.floor(seconds / 60);
 		const secs = Math.floor(seconds % 60);
 		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	}
 
+	/**
+	 * Converts an X coordinate to song time.
+	 * Used for click-to-seek functionality.
+	 *
+	 * @param x - The X coordinate in canvas space
+	 * @returns The corresponding song time in seconds
+	 */
 	getTimeFromX(x: number): number {
 		if (!this.track || this.songDuration === 0) return 0;
 

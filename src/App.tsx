@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp, Clock, Layers, Music2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { FileUpload } from "./components/FileUpload";
 import { Library } from "./components/Library";
@@ -10,13 +11,22 @@ import type { Song } from "./domain/types";
 import { AudioEngine } from "./engine/AudioEngine";
 import { usePlayback } from "./hooks/usePlayback";
 import { useSpeedControl } from "./hooks/useSpeedControl";
-import { ChevronDown, ChevronUp, Clock, Layers, Music2 } from "lucide-react";
 import {
 	getCurrentSongName,
 	getSong,
 	setCurrentSong,
 } from "./services/storage";
 
+/**
+ * Main application component for Tocaí - a web-based Guitar Pro player.
+ *
+ * Manages the overall application state including:
+ * - Current song and track selection
+ * - Playback control (play, pause, stop, seek)
+ * - Speed control
+ * - Track mixing (volume, mute, solo)
+ * - Song library management
+ */
 function App() {
 	const [song, setSong] = useState<Song | null>(null);
 	const [currentSongName, setCurrentSongName] = useState<string | null>(null);
@@ -171,8 +181,12 @@ function App() {
 									<Music2 className="size-5 text-primary" />
 								</div>
 								<div className="min-w-0">
-									<h2 className="text-xl font-bold truncate leading-tight text-foreground">{song.metadata.title || currentSongName}</h2>
-									<p className="text-sm text-foreground/80 truncate">{song.metadata.artist || "Unknown Artist"}</p>
+									<h2 className="text-xl font-bold truncate leading-tight text-foreground">
+										{song.metadata.title || currentSongName}
+									</h2>
+									<p className="text-sm text-foreground/80 truncate">
+										{song.metadata.artist || "Unknown Artist"}
+									</p>
 								</div>
 							</div>
 							<div className="flex items-center gap-1 shrink-0 ml-4">
@@ -184,9 +198,15 @@ function App() {
 									aria-expanded={!isMetadataCollapsed}
 								>
 									{isMetadataCollapsed ? (
-										<><ChevronDown className="size-4 mr-1" />Show</>
+										<>
+											<ChevronDown className="size-4 mr-1" />
+											Show
+										</>
 									) : (
-										<><ChevronUp className="size-4 mr-1" />Collapse</>
+										<>
+											<ChevronUp className="size-4 mr-1" />
+											Collapse
+										</>
 									)}
 								</Button>
 							</div>
@@ -199,13 +219,21 @@ function App() {
 								<div className="flex flex-wrap gap-2 mb-5">
 									<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 rounded-lg shadow-sm">
 										<Clock className="size-3.5 text-primary" />
-										<span className="text-xs font-semibold text-foreground">Duration</span>
-										<span className="text-xs font-bold ml-1">{formatDuration(song.durationSeconds)}</span>
+										<span className="text-xs font-semibold text-foreground">
+											Duration
+										</span>
+										<span className="text-xs font-bold ml-1">
+											{formatDuration(song.durationSeconds)}
+										</span>
 									</div>
 									<div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/40 rounded-lg shadow-sm">
 										<Layers className="size-3.5 text-primary" />
-										<span className="text-xs font-semibold text-foreground">Tracks</span>
-										<span className="text-xs font-bold ml-1">{song.tracks.length}</span>
+										<span className="text-xs font-semibold text-foreground">
+											Tracks
+										</span>
+										<span className="text-xs font-bold ml-1">
+											{song.tracks.length}
+										</span>
 									</div>
 								</div>
 								<Button

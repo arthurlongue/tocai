@@ -85,15 +85,15 @@ describe("Layout Math", () => {
 		});
 	});
 
-		it("PIXELS_PER_SECOND scales time to distance correctly", () => {
-			expect(PIXELS_PER_SECOND).toBe(200);
+	it("PIXELS_PER_SECOND scales time to distance correctly", () => {
+		expect(PIXELS_PER_SECOND).toBe(200);
 
-			// A note 1 second in the future should be PIXELS_PER_SECOND pixels to the right
-			const oneSecondFuture = getNoteX(6.0, 5.0);
-			expect(oneSecondFuture).toBe(HIT_LINE_X + PIXELS_PER_SECOND);
+		// A note 1 second in the future should be PIXELS_PER_SECOND pixels to the right
+		const oneSecondFuture = getNoteX(6.0, 5.0);
+		expect(oneSecondFuture).toBe(HIT_LINE_X + PIXELS_PER_SECOND);
 
-			// A note 1 second in the past should be PIXELS_PER_SECOND pixels to the left
-			const oneSecondPast = getNoteX(4.0, 5.0);
-			expect(oneSecondPast).toBe(HIT_LINE_X - PIXELS_PER_SECOND);
-		});
+		// A note 1 second in the past should be PIXELS_PER_SECOND pixels to the left
+		const oneSecondPast = getNoteX(4.0, 5.0);
+		expect(oneSecondPast).toBe(HIT_LINE_X - PIXELS_PER_SECOND);
+	});
 });

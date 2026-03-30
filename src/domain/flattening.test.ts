@@ -136,7 +136,9 @@ describe("flattenSong", () => {
 		note.slide = 1; // Slide up
 		note.bend = { origin: 0, destination: 4, middle: 2 }; // Half bend (4 points = 1/2 step)
 
-		const flattened = flattenSong(mockSong([mockTrack([mockBar([mockBeat([note])])])]));
+		const flattened = flattenSong(
+			mockSong([mockTrack([mockBar([mockBeat([note])])])]),
+		);
 		const technique = flattened.tracks[0].notes[0].techniques;
 
 		expect(technique.hammerOn).toBe(true);
